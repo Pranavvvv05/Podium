@@ -78,6 +78,18 @@ def get_models(problem_type: str) -> dict:
             {"model__n_neighbors": [3, 5, 9]},
         ),
     }
+def evaluate(problem_type: str, y_true, y_pred) -> dict:
+    if problem_type == "classification":
+        return {
+            "accuracy": accuracy_score(y_true, y_pred),
+            "f1": f1_score(y_true, y_pred, average="weighted"),
+        }
+    return {
+        "r2": r2_score(y_true, y_pred),
+        "rmse": mean_squared_error(y_true, y_pred) ** 0.5,
+    }
+
+
 def run(csv_path: str, target: str | None = None):
     df = pd.read_csv(csv_path)
     target = target or df.columns[-1]
