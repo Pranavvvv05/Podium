@@ -19,6 +19,19 @@ def detect_problem_type(y: pd.Series) -> str:
     if pd.api.types.is_integer_dtype(y) and y.nunique() <= 15:
         return "classification"
     return "regression"
+def drop_noise_columns(X: pd.DataFrame, max_unique_text: int = 50):
+    """Drop columns that only add noise: ID-like numbers and text with too many unique values
+    (Name, Ticket, ...). Returns (cleaned X, list of dropped column names)."""
+    dropped = []
+    for col in X.columns:
+        nunique = X[col].nunique(dropna=True)
+        is_text = not pd.api.types.is_numeric_dtype(X[col])
+        is_id_like = pd.api.types.is_integer_dtype(X[col]) and nunique == len(X)
+        if is_id_like or nunique <= 1 or (is_text and nunique > max_unique_text):
+            dropped.append(col)
+    return X.drop(columns=dropped), dropped
+
+
 def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
     num_cols = X.select_dtypes(include="number").columns.tolist()
     cat_cols = [c for c in X.columns if c not in num_cols]
@@ -98,7 +111,10 @@ def run(csv_path: str, target: str | None = None):
  
     df = df.dropna(subset=[target])
     X, y = df.drop(columns=[target]), df[target]
- 
+    X, dropped = drop_noise_columns(X)
+    if dropped:
+        print(f"Dropped noisy columns: {dropped}")
+
     problem_type = detect_problem_type(y)
     print(f"Rows: {len(df)} | Features: {X.shape[1]} | Target: {target} | Type: {problem_type}")
  
@@ -148,4 +164,3 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit("Usage: python train.py <data.csv> [target_column]")
     run(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)
- 
