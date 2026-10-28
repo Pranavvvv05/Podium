@@ -171,3 +171,67 @@ def run_dataset(dataset_id: int, target: str, background_tasks: BackgroundTasks,
         "problem_type": data["problem_type"],
         "jobs": [{"job_id": j.id, "model": j.model_name, "status": j.status} for j in jobs],
     }
+
+@app.get("/jobs/{dataset_id}")
+def get_jobs(dataset_id: int, db: Session = Depends(get_db)):
+    dataset = db.get(models.Dataset, dataset_id)
+    if dataset is None:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    jobs = (
+        db.query(models.Job)
+        .filter_by(dataset_id=dataset_id)
+        .order_by(models.Job.id)
+        .all()
+    )
+    return [
+        {
+            "job_id": j.id,
+            "model": j.model_name,
+            "status": j.status,
+            "score": j.score,
+            "metrics": j.metrics,
+            "best_params": j.best_params,
+            "seconds": j.seconds,
+            "error": j.error,
+        }
+        for j in jobs
+    ]
+@app.get("/leaderboard/{dataset_id}")
+def get_leaderboard(dataset_id: int, db: Session = Depends(get_db)):
+    dataset = db.get(models.Dataset, dataset_id)
+    if dataset is None:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    done_jobs = (
+        db.query(models.Job)
+        .filter_by(dataset_id=dataset_id, status="done")
+        .order_by(models.Job.score.desc())
+        .all()
+    )
+    return [
+        {
+            "rank": rank,
+            "model": j.model_name,
+            "score": j.score,
+            "metrics": j.metrics,
+            "seconds": j.seconds,
+        }
+        for rank, j in enumerate(done_jobs, start=1)
+    ]
+@app.get("/logs/{dataset_id}")
+def get_logs(dataset_id: int, db: Session = Depends(get_db)):
+    dataset = db.get(models.Dataset, dataset_id)
+    if dataset is None:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    logs = (
+        db.query(models.BossLog)
+        .filter_by(dataset_id=dataset_id)
+        .order_by(models.BossLog.id)
+        .all()
+    )
+    return [
+        {"id": l.id, "message": l.message, "time": l.created_at}
+        for l in logs
+    ]
