@@ -13,6 +13,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder,StandardScaler
 from sklearn.svm import SVR,SVC
 
+
 def detect_problem_type(y: pd.Series) -> str:
     if y.dtype == "object" or y.dtype == "bool" or str(y.dtype) == "category":
         return "classification"
@@ -160,6 +161,60 @@ def run(csv_path: str, target: str | None = None):
     return board
  
  
+
+def _clean(value):
+    if hasattr(value, "item"):
+        return value.item()
+    return value
+
+
+def prepare_data(csv_path: str, target: str) -> dict:
+    df = pd.read_csv(csv_path)
+    if target not in df.columns:
+        raise ValueError(f"Target column '{target}' not found. Columns: {list(df.columns)}")
+
+    df = df.dropna(subset=[target])
+    X, y = df.drop(columns=[target]), df[target]
+    X, dropped = drop_noise_columns(X)
+    problem_type = detect_problem_type(y)
+
+    stratify = None
+    if problem_type == "classification" and y.value_counts().min() >= 2:
+        stratify = y
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=stratify
+    )
+    return {
+        "problem_type": problem_type,
+        "n_rows": len(df),
+        "n_features": X.shape[1],
+        "X_train": X_train, "X_test": X_test,
+        "y_train": y_train, "y_test": y_test,
+    }
+
+
+def train_one(name: str, data: dict) -> dict:
+    """Train ONE model (with GridSearchCV) and return its result as a plain dict."""
+    problem_type = data["problem_type"]
+    estimator, grid = get_models(problem_type)[name]
+    scoring = "f1_weighted" if problem_type == "classification" else "r2"
+
+    start = time.time()
+    pipe = Pipeline([("prep", build_preprocessor(data["X_train"])), ("model", estimator)])
+    search = GridSearchCV(pipe, grid, cv=3, scoring=scoring, n_jobs=-1)
+    search.fit(data["X_train"], data["y_train"])
+    metrics = evaluate(problem_type, data["y_test"], search.predict(data["X_test"]))
+
+    main_metric = "f1" if problem_type == "classification" else "r2"
+    return {
+        "model": name,
+        "score": float(metrics[main_metric]),
+        "metrics": {k: float(v) for k, v in metrics.items()},
+        "best_params": {k.replace("model__", ""): _clean(v) for k, v in search.best_params_.items()},
+        "seconds": round(time.time() - start, 1),
+    }
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit("Usage: python train.py <data.csv> [target_column]")
