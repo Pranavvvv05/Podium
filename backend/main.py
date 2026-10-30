@@ -1,13 +1,13 @@
 import os
 from datetime import datetime
 from ml.train import prepare_data, get_models, train_one
-
 import pandas as pd
 from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from database import SessionLocal, engine, Base
 import models 
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 
 Base.metadata.create_all(bind=engine)
 
@@ -72,46 +72,62 @@ def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
     }
 
 
+MAX_WORKERS = 8  # models se zyada rakha hai, taaki saare ek saath shuru hon
+
+
 def run_jobs(dataset_id: int):
-    """Background kaam: queued jobs ko ek-ek karke train karta hai."""
+    """Background kaam: saare queued jobs ko ek saath train karta hai."""
     db = SessionLocal()  # background mein apna alag DB session chahiye
     try:
         dataset = db.get(models.Dataset, dataset_id)
         data = prepare_data(dataset.file_path, dataset.target_column)
-        jobs = (
+        waiting = (
             db.query(models.Job)
             .filter_by(dataset_id=dataset_id, status="queued")
+            .order_by(models.Job.id)
             .all()
         )
+        running = {}  # future -> job
 
-        for job in jobs:
-            # 1. Employee kaam shuru karta hai
+        def start_next(pool):
+            """Line mein agla employee ho to use kaam par lagao."""
+            if not waiting:
+                return
+            job = waiting.pop(0)
             job.status = "training"
             job.started_at = datetime.utcnow()
             db.add(models.BossLog(dataset_id=dataset_id,
                                   message=f"{job.model_name} started training."))
             db.commit()
+            # n_jobs=1: har employee ek hi process use kare, CPU par bheed na ho
+            running[pool.submit(train_one, job.model_name, data, 1)] = job
 
-            # 2. Asli training (Step 1 ka tool)
-            try:
-                result = train_one(job.model_name, data)
-                job.status = "done"
-                job.score = result["score"]
-                job.metrics = result["metrics"]
-                job.best_params = result["best_params"]
-                job.seconds = result["seconds"]
-                msg = f"{job.model_name} finished with score {result['score']:.4f}."
-            except Exception as e:
-                job.status = "failed"
-                job.error = str(e)
-                msg = f"{job.model_name} failed: {e}"
+        with ProcessPoolExecutor(max_workers=MAX_WORKERS) as pool:
+            for _ in range(MAX_WORKERS):
+                start_next(pool)
 
-            # 3. Result save karo aur boss ko batao
-            job.finished_at = datetime.utcnow()
-            db.add(models.BossLog(dataset_id=dataset_id, message=msg))
-            db.commit()
+            while running:
+                finished, _ = wait(running, return_when=FIRST_COMPLETED)
+                for future in finished:
+                    job = running.pop(future)
+                    try:
+                        result = future.result()
+                        job.status = "done"
+                        job.score = result["score"]
+                        job.metrics = result["metrics"]
+                        job.best_params = result["best_params"]
+                        job.seconds = result["seconds"]
+                        msg = f"{job.model_name} finished with score {result['score']:.4f}."
+                    except Exception as e:
+                        job.status = "failed"
+                        job.error = str(e)
+                        msg = f"{job.model_name} failed: {e}"
+                    job.finished_at = datetime.utcnow()
+                    db.add(models.BossLog(dataset_id=dataset_id, message=msg))
+                    db.commit()
+                    start_next(pool)  # jo employee khali hua, use naya kaam do
 
-        # 4. Sabse zyada score wala winner
+        # Sabse zyada score wala winner
         winner = (
             db.query(models.Job)
             .filter_by(dataset_id=dataset_id, status="done")

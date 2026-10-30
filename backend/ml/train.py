@@ -193,7 +193,7 @@ def prepare_data(csv_path: str, target: str) -> dict:
     }
 
 
-def train_one(name: str, data: dict) -> dict:
+def train_one(name: str, data: dict, n_jobs: int = -1) -> dict:
     """Train ONE model (with GridSearchCV) and return its result as a plain dict."""
     problem_type = data["problem_type"]
     estimator, grid = get_models(problem_type)[name]
@@ -201,7 +201,7 @@ def train_one(name: str, data: dict) -> dict:
 
     start = time.time()
     pipe = Pipeline([("prep", build_preprocessor(data["X_train"])), ("model", estimator)])
-    search = GridSearchCV(pipe, grid, cv=3, scoring=scoring, n_jobs=-1)
+    search = GridSearchCV(pipe, grid, cv=3, scoring=scoring, n_jobs=n_jobs)
     search.fit(data["X_train"], data["y_train"])
     metrics = evaluate(problem_type, data["y_test"], search.predict(data["X_test"]))
 
