@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from ml.train import (prepare_data, get_models, train_one,
+from ml.train import (prepare_data, get_models, worker,
                       drop_noise_columns, detect_problem_type)
 import pandas as pd
 from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, UploadFile
@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 
 from database import SessionLocal, engine, Base
 import models 
-from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
+import multiprocessing as mp
+import queue as queue_lib
+import time
 import joblib
 
 Base.metadata.create_all(bind=engine)
@@ -89,7 +91,8 @@ def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
     }
 
 
-MAX_WORKERS = 8 
+MAX_WORKERS = 8
+MODEL_TIME_LIMIT = 300  # seconds: isse zyada lage to model band
 MODEL_DIR = "models_saved"
 os.makedirs(MODEL_DIR, exist_ok=True)
 
@@ -115,11 +118,12 @@ def run_jobs(dataset_id: int):
             .order_by(models.Job.id)
             .all()
         )
-        running = {}
+        running = []
         best = {"score": None, "model": None, "job": None}
+        ctx = mp.get_context("spawn")
 
-        def start_next(pool):
-            """Line mein agla employee ho to use kaam par lagao."""
+        def start_next():
+            """Line mein agla employee ho to use alag process mein kaam par lagao."""
             if not waiting:
                 return
             job = waiting.pop(0)
@@ -132,36 +136,60 @@ def run_jobs(dataset_id: int):
             db.add(models.BossLog(dataset_id=dataset_id,
                                   message=f"{job.model_name} started training."))
             db.commit()
-            running[pool.submit(train_one, job.model_name, data, 1)] = job
+            q = ctx.Queue()
+            proc = ctx.Process(target=worker, args=(q, job.model_name, data))
+            proc.start()
+            running.append({"proc": proc, "queue": q, "job": job, "t0": time.time()})
 
-        with ProcessPoolExecutor(max_workers=MAX_WORKERS) as pool:
-            for _ in range(MAX_WORKERS):
-                start_next(pool)
+        def check(item):
+            """Result mile to (kind, payload), abhi chal raha ho to None."""
+            try:
+                return item["queue"].get_nowait()
+            except queue_lib.Empty:
+                pass
+            if time.time() - item["t0"] > MODEL_TIME_LIMIT:
+                item["proc"].terminate()
+                return ("error", f"Time limit of {MODEL_TIME_LIMIT}s reached")
+            if not item["proc"].is_alive():
+                try:
+                    return item["queue"].get(timeout=2)
+                except queue_lib.Empty:
+                    return ("error", "Training process crashed")
+            return None
 
-            while running:
-                finished, _ = wait(running, return_when=FIRST_COMPLETED)
-                for future in finished:
-                    job = running.pop(future)
-                    try:
-                        result = future.result()
-                        job.status = "done"
-                        job.score = result["score"]
-                        job.metrics = result["metrics"]
-                        job.best_params = result["best_params"]
-                        job.seconds = result["seconds"]
-                        job.current_task = f"Finished in {result['seconds']}s"
-                        if best["score"] is None or result["score"] > best["score"]:
-                            best.update(score=result["score"], model=result["model"], job=job)
-                        msg = f"{job.model_name} finished with score {result['score']:.4f}."
-                    except Exception as e:
-                        job.status = "failed"
-                        job.error = str(e)
-                        job.current_task = "Failed"
-                        msg = f"{job.model_name} failed: {e}"
-                    job.finished_at = datetime.utcnow()
-                    db.add(models.BossLog(dataset_id=dataset_id, message=msg))
-                    db.commit()
-                    start_next(pool) 
+        def finish(job, kind, payload):
+            if kind == "ok":
+                job.status = "done"
+                job.score = payload["score"]
+                job.metrics = payload["metrics"]
+                job.best_params = payload["best_params"]
+                job.seconds = payload["seconds"]
+                job.current_task = f"Finished in {payload['seconds']}s"
+                if best["score"] is None or payload["score"] > best["score"]:
+                    best.update(score=payload["score"], model=payload["model"], job=job)
+                msg = f"{job.model_name} finished with score {payload['score']:.4f}."
+            else:
+                job.status = "failed"
+                job.error = payload
+                job.current_task = "Failed"
+                msg = f"{job.model_name} failed: {payload}"
+            job.finished_at = datetime.utcnow()
+            db.add(models.BossLog(dataset_id=dataset_id, message=msg))
+            db.commit()
+
+        for _ in range(MAX_WORKERS):
+            start_next()
+
+        while running:
+            time.sleep(0.5)
+            for item in list(running):
+                result = check(item)
+                if result is None:
+                    continue
+                item["proc"].join()
+                running.remove(item)
+                finish(item["job"], *result)
+                start_next()
 
         winner = (
             db.query(models.Job)

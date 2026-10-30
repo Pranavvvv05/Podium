@@ -244,6 +244,14 @@ def train_one(name: str, data: dict, n_jobs: int = -1) -> dict:
     }
 
 
+def worker(queue, name: str, data: dict):
+    """Alag process mein ek model train karke result queue mein daalta hai."""
+    try:
+        queue.put(("ok", train_one(name, data, 1)))
+    except Exception as e:
+        queue.put(("error", str(e)))
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit("Usage: python train.py <data.csv> [target_column]")
