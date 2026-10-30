@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
-from ml.train import prepare_data, get_models, train_one
+from ml.train import (prepare_data, get_models, train_one,
+                      drop_noise_columns, detect_problem_type)
 import pandas as pd
 from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
@@ -14,6 +15,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Podium")
 
 UPLOAD_DIR = "uploads"
+MAX_UPLOAD_MB = 50  # isse bada CSV allow nahi
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
@@ -40,8 +42,12 @@ def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
     stamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     save_name = f"{stamp}_{os.path.basename(file.filename)}"
     save_path = os.path.join(UPLOAD_DIR, save_name)
+    content = file.file.read()
+    if len(content) > MAX_UPLOAD_MB * 1024 * 1024:
+        raise HTTPException(status_code=413,
+                            detail=f"File is too large. Limit is {MAX_UPLOAD_MB} MB")
     with open(save_path, "wb") as f:
-        f.write(file.file.read())
+        f.write(content)
 
     # 3. pandas pdhke check kr rh shi csv h 
     try:
@@ -269,3 +275,69 @@ def get_logs(dataset_id: int, db: Session = Depends(get_db)):
         {"id": l.id, "message": l.message, "time": l.created_at}
         for l in logs
     ]
+
+
+@app.get("/insights/{dataset_id}")
+def get_insights(dataset_id: int, target: str | None = None,
+                 db: Session = Depends(get_db)):
+    dataset = db.get(models.Dataset, dataset_id)
+    if dataset is None:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    df = pd.read_csv(dataset.file_path)
+    target = target or dataset.target_column
+    if target is not None and target not in df.columns:
+        raise HTTPException(status_code=400, detail=f"Column '{target}' not found")
+
+    features = df.drop(columns=[target]) if target else df
+    _, dropped = drop_noise_columns(features)
+    n_numeric = len(features.select_dtypes(include="number").columns)
+
+    # Kin columns mein khali (missing) values hain
+    missing = []
+    for col, count in df.isna().sum().items():
+        if count > 0:
+            missing.append({"column": col, "missing": int(count),
+                            "percent": round(count / len(df) * 100, 1)})
+
+    result = {
+        "rows": len(df),
+        "columns": len(df.columns),
+        "numeric_features": n_numeric,
+        "text_features": len(features.columns) - n_numeric,
+        "duplicate_rows": int(df.duplicated().sum()),
+        "missing": missing,
+        "dropped_columns": dropped,
+        "target": None,
+        "warnings": [],
+    }
+
+    # Target column ki jaankari
+    if target:
+        y = df[target].dropna()
+        problem_type = detect_problem_type(y)
+        info = {"column": target, "type": problem_type}
+        if problem_type == "classification":
+            share = (y.value_counts(normalize=True) * 100).round(1).head(10)
+            info["balance_percent"] = {str(k): float(v) for k, v in share.items()}
+            if share.min() < 10:
+                result["warnings"].append(
+                    "Target classes are imbalanced: a small class has under 10% of rows.")
+        else:
+            info.update({"min": float(y.min()), "max": float(y.max()),
+                         "mean": round(float(y.mean()), 3),
+                         "median": round(float(y.median()), 3)})
+        result["target"] = info
+
+    # Seedhi bhasha mein chetavni
+    for item in missing:
+        if item["percent"] > 30:
+            result["warnings"].append(
+                f"Column '{item['column']}' is {item['percent']}% empty.")
+    if len(df) < 500:
+        result["warnings"].append("Small dataset (under 500 rows): scores can vary a lot.")
+    if dropped:
+        result["warnings"].append(
+            "These columns were ignored as noise: " + ", ".join(dropped) + ".")
+
+    return result

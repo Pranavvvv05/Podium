@@ -51,6 +51,7 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
         ("cat", categorical, cat_cols),
     ])
 def get_models(problem_type: str) -> dict:
+    """Each entry: name -> (estimator, param_grid). Grids are kept small for speed."""
     if problem_type == "classification":
         return {
             "Logistic Regression": (
@@ -145,7 +146,7 @@ def run(csv_path: str, target: str | None = None):
                 "seconds": round(time.time() - start, 1),
             })
             print(f"done in {time.time() - start:.1f}s")
-        except Exception as e:  
+        except Exception as e:  # one model failing should not kill the whole run
             print(f"FAILED ({e})")
  
     if not results:
@@ -162,7 +163,9 @@ def run(csv_path: str, target: str | None = None):
  
  
 
-SAMPLE_LIMIT = 4000 
+SAMPLE_LIMIT = 4000  # isse bade training data par pehle sample se settings dhundhte hain
+SLOW_MODELS = {"SVM", "SVR", "KNN"}  # ye bade data par bahut dheme ho jate hain
+SLOW_MODEL_LIMIT = 20000  # inhe isse zyada rows par train nahi karte
 
 
 def _clean(value):
@@ -197,12 +200,16 @@ def prepare_data(csv_path: str, target: str) -> dict:
 
 
 def train_one(name: str, data: dict, n_jobs: int = -1) -> dict:
+    """Train ONE model (with GridSearchCV) and return its result as a plain dict."""
     problem_type = data["problem_type"]
     estimator, grid = get_models(problem_type)[name]
     scoring = "f1_weighted" if problem_type == "classification" else "r2"
 
     start = time.time()
     X_train, y_train = data["X_train"], data["y_train"]
+
+    # Bada dataset ho to best settings ek chhote sample par dhundho (tez),
+    # phir wahi settings poore data par ek baar train karo.
     sampled = len(X_train) > SAMPLE_LIMIT
     if sampled:
         X_fit = X_train.sample(n=SAMPLE_LIMIT, random_state=42)
@@ -214,9 +221,15 @@ def train_one(name: str, data: dict, n_jobs: int = -1) -> dict:
     search = GridSearchCV(pipe, grid, cv=3, scoring=scoring, n_jobs=n_jobs, refit=not sampled)
     search.fit(X_fit, y_fit)
 
-    if sampled:
+    # SVM, SVR aur KNN ke liye aakhri training bhi 20000 rows tak hi rakho
+    X_final, y_final = X_train, y_train
+    if name in SLOW_MODELS and len(X_train) > SLOW_MODEL_LIMIT:
+        X_final = X_train.sample(n=SLOW_MODEL_LIMIT, random_state=42)
+        y_final = y_train.loc[X_final.index]
+
+    if sampled or len(X_final) < len(X_train):
         final_model = clone(pipe).set_params(**search.best_params_)
-        final_model.fit(X_train, y_train)
+        final_model.fit(X_final, y_final)
     else:
         final_model = search
     metrics = evaluate(problem_type, data["y_test"], final_model.predict(data["X_test"]))
