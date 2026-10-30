@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
 import models 
 from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
+import joblib
 
 Base.metadata.create_all(bind=engine)
 
@@ -88,7 +89,9 @@ def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
     }
 
 
-MAX_WORKERS = 8  # models se zyada rakha hai, taaki saare ek saath shuru hon
+MAX_WORKERS = 8 
+MODEL_DIR = "models_saved"
+os.makedirs(MODEL_DIR, exist_ok=True)
 
 
 def count_trainings(problem_type: str, model_name: str) -> int:
@@ -102,7 +105,7 @@ def count_trainings(problem_type: str, model_name: str) -> int:
 
 def run_jobs(dataset_id: int):
     """Background kaam: saare queued jobs ko ek saath train karta hai."""
-    db = SessionLocal()  # background mein apna alag DB session chahiye
+    db = SessionLocal()  
     try:
         dataset = db.get(models.Dataset, dataset_id)
         data = prepare_data(dataset.file_path, dataset.target_column)
@@ -112,7 +115,8 @@ def run_jobs(dataset_id: int):
             .order_by(models.Job.id)
             .all()
         )
-        running = {}  # future -> job
+        running = {}
+        best = {"score": None, "model": None, "job": None}
 
         def start_next(pool):
             """Line mein agla employee ho to use kaam par lagao."""
@@ -128,7 +132,6 @@ def run_jobs(dataset_id: int):
             db.add(models.BossLog(dataset_id=dataset_id,
                                   message=f"{job.model_name} started training."))
             db.commit()
-            # n_jobs=1: har employee ek hi process use kare, CPU par bheed na ho
             running[pool.submit(train_one, job.model_name, data, 1)] = job
 
         with ProcessPoolExecutor(max_workers=MAX_WORKERS) as pool:
@@ -147,6 +150,8 @@ def run_jobs(dataset_id: int):
                         job.best_params = result["best_params"]
                         job.seconds = result["seconds"]
                         job.current_task = f"Finished in {result['seconds']}s"
+                        if best["score"] is None or result["score"] > best["score"]:
+                            best.update(score=result["score"], model=result["model"], job=job)
                         msg = f"{job.model_name} finished with score {result['score']:.4f}."
                     except Exception as e:
                         job.status = "failed"
@@ -156,9 +161,8 @@ def run_jobs(dataset_id: int):
                     job.finished_at = datetime.utcnow()
                     db.add(models.BossLog(dataset_id=dataset_id, message=msg))
                     db.commit()
-                    start_next(pool)  # jo employee khali hua, use naya kaam do
+                    start_next(pool) 
 
-        # Sabse zyada score wala winner
         winner = (
             db.query(models.Job)
             .filter_by(dataset_id=dataset_id, status="done")
@@ -170,6 +174,11 @@ def run_jobs(dataset_id: int):
                 dataset_id=dataset_id,
                 message=f"Winner: {winner.model_name} with score {winner.score:.4f}.",
             ))
+            db.commit()
+        if best["model"] is not None:
+            path = os.path.join(MODEL_DIR, f"dataset_{dataset_id}_{best['job'].model_name}.joblib")
+            joblib.dump(best["model"], path)
+            best["job"].model_path = path
             db.commit()
     finally:
         db.close()
