@@ -75,6 +75,15 @@ def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
 MAX_WORKERS = 8  # models se zyada rakha hai, taaki saare ek saath shuru hon
 
 
+def count_trainings(problem_type: str, model_name: str) -> int:
+    """GridSearchCV kitni baar train karega: settings x 3 folds."""
+    grid = get_models(problem_type)[model_name][1]
+    settings = 1
+    for values in grid.values():
+        settings *= len(values)
+    return settings * 3
+
+
 def run_jobs(dataset_id: int):
     """Background kaam: saare queued jobs ko ek saath train karta hai."""
     db = SessionLocal()  # background mein apna alag DB session chahiye
@@ -96,6 +105,10 @@ def run_jobs(dataset_id: int):
             job = waiting.pop(0)
             job.status = "training"
             job.started_at = datetime.utcnow()
+            job.current_task = (
+                f"GridSearchCV running: "
+                f"{count_trainings(dataset.problem_type, job.model_name)} trainings"
+            )
             db.add(models.BossLog(dataset_id=dataset_id,
                                   message=f"{job.model_name} started training."))
             db.commit()
@@ -117,10 +130,12 @@ def run_jobs(dataset_id: int):
                         job.metrics = result["metrics"]
                         job.best_params = result["best_params"]
                         job.seconds = result["seconds"]
+                        job.current_task = f"Finished in {result['seconds']}s"
                         msg = f"{job.model_name} finished with score {result['score']:.4f}."
                     except Exception as e:
                         job.status = "failed"
                         job.error = str(e)
+                        job.current_task = "Failed"
                         msg = f"{job.model_name} failed: {e}"
                     job.finished_at = datetime.utcnow()
                     db.add(models.BossLog(dataset_id=dataset_id, message=msg))
@@ -167,7 +182,8 @@ def run_dataset(dataset_id: int, target: str, background_tasks: BackgroundTasks,
     model_names = list(get_models(data["problem_type"]))
     jobs = []
     for name in model_names:
-        job = models.Job(dataset_id=dataset.id, model_name=name, status="queued")
+        job = models.Job(dataset_id=dataset.id, model_name=name, status="queued",
+                         current_task="Waiting in line")
         db.add(job)
         jobs.append(job)
 
@@ -205,6 +221,8 @@ def get_jobs(dataset_id: int, db: Session = Depends(get_db)):
             "job_id": j.id,
             "model": j.model_name,
             "status": j.status,
+            "current_task": j.current_task,
+            "started_at": j.started_at,
             "score": j.score,
             "metrics": j.metrics,
             "best_params": j.best_params,

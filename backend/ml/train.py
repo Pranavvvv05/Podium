@@ -1,6 +1,7 @@
 import sys 
 import time 
 import pandas as pd 
+from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier,RandomForestRegressor
 from sklearn.impute import SimpleImputer
@@ -50,7 +51,6 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
         ("cat", categorical, cat_cols),
     ])
 def get_models(problem_type: str) -> dict:
-    """Each entry: name -> (estimator, param_grid). Grids are kept small for speed."""
     if problem_type == "classification":
         return {
             "Logistic Regression": (
@@ -145,7 +145,7 @@ def run(csv_path: str, target: str | None = None):
                 "seconds": round(time.time() - start, 1),
             })
             print(f"done in {time.time() - start:.1f}s")
-        except Exception as e:  # one model failing should not kill the whole run
+        except Exception as e:  
             print(f"FAILED ({e})")
  
     if not results:
@@ -161,6 +161,9 @@ def run(csv_path: str, target: str | None = None):
     return board
  
  
+
+SAMPLE_LIMIT = 4000 
+
 
 def _clean(value):
     if hasattr(value, "item"):
@@ -194,16 +197,29 @@ def prepare_data(csv_path: str, target: str) -> dict:
 
 
 def train_one(name: str, data: dict, n_jobs: int = -1) -> dict:
-    """Train ONE model (with GridSearchCV) and return its result as a plain dict."""
     problem_type = data["problem_type"]
     estimator, grid = get_models(problem_type)[name]
     scoring = "f1_weighted" if problem_type == "classification" else "r2"
 
     start = time.time()
-    pipe = Pipeline([("prep", build_preprocessor(data["X_train"])), ("model", estimator)])
-    search = GridSearchCV(pipe, grid, cv=3, scoring=scoring, n_jobs=n_jobs)
-    search.fit(data["X_train"], data["y_train"])
-    metrics = evaluate(problem_type, data["y_test"], search.predict(data["X_test"]))
+    X_train, y_train = data["X_train"], data["y_train"]
+    sampled = len(X_train) > SAMPLE_LIMIT
+    if sampled:
+        X_fit = X_train.sample(n=SAMPLE_LIMIT, random_state=42)
+        y_fit = y_train.loc[X_fit.index]
+    else:
+        X_fit, y_fit = X_train, y_train
+
+    pipe = Pipeline([("prep", build_preprocessor(X_train)), ("model", estimator)])
+    search = GridSearchCV(pipe, grid, cv=3, scoring=scoring, n_jobs=n_jobs, refit=not sampled)
+    search.fit(X_fit, y_fit)
+
+    if sampled:
+        final_model = clone(pipe).set_params(**search.best_params_)
+        final_model.fit(X_train, y_train)
+    else:
+        final_model = search
+    metrics = evaluate(problem_type, data["y_test"], final_model.predict(data["X_test"]))
 
     main_metric = "f1" if problem_type == "classification" else "r2"
     return {
