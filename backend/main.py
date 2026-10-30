@@ -13,6 +13,16 @@ from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Podium")
+@app.on_event("startup")
+def cleanup_stuck_jobs():
+    db = SessionLocal()
+    stuck = db.query(models.Job).filter(models.Job.status.in_(["queued", "training"])).all()
+    for job in stuck:
+        job.status = "failed"
+        job.current_task = "Failed"
+        job.error = "Server restarted before this job finished"
+    db.commit()
+    db.close()
 
 UPLOAD_DIR = "uploads"
 MAX_UPLOAD_MB = 50  # isse bada CSV allow nahi
