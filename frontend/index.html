@@ -1,224 +1,2264 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Podium</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Podium — Office of ML Models</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #FAF6EC;
+      color: #1C1917;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F3EDE0;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D5CBB8;
+      border-radius: 9999px;
+    }
+    /* Crisp pixel speech bubble styling */
+    .pixel-speech-bubble {
+      background: #FFFFFF;
+      color: #18181B;
+      border: 2px solid #27272A;
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
+      white-space: nowrap;
+      line-height: 1.25;
+    }
+    .pixel-speech-bubble.active-selected {
+      border-color: #D97706;
+      background: #FFFBEB;
+      box-shadow: 0 2px 0 rgba(217, 119, 6, 0.35);
+    }
+    .pixel-nameplate {
+      background: rgba(24, 24, 27, 0.88);
+      color: #FAFAFA;
+      border: 1px solid rgba(63, 63, 70, 0.9);
+      border-radius: 5px;
+      padding: 1px 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+    }
+  </style>
 </head>
-<body class="bg-stone-100 text-stone-800 min-h-screen">
+<body class="min-h-screen flex flex-col justify-between bg-[#FAF6EC]">
 
-  <header class="bg-blue-900 text-white">
-    <div class="max-w-3xl mx-auto px-4 py-5">
-      <h1 class="text-2xl font-bold">Podium</h1>
-      <p class="text-blue-200 text-sm">Upload a CSV. Our employees (models) compete. The best one wins.</p>
+  <!-- TOP NAVIGATION BAR (Munder Difflin / Podium Header) -->
+  <header class="w-full max-w-[1440px] mx-auto px-4 pt-3 pb-2 flex flex-wrap items-center justify-between gap-3">
+    <!-- Brand Logo & Name -->
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl bg-[#F5B82E] border-2 border-stone-800 shadow-xs flex items-center justify-center overflow-hidden">
+        <canvas id="headerBossIcon" width="28" height="28" class="w-7 h-7"></canvas>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-base tracking-tight text-stone-900">Podium</span>
+          <span class="text-[10px] font-mono-code font-bold uppercase px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-950 border border-amber-400/60" id="header-problem-badge">
+            classification // 5 models
+          </span>
+        </div>
+        <p class="text-[11px] text-stone-500 font-medium leading-none mt-0.5">Multi-Model AutoML Harness • <span class="font-mono-code">train.py + main.py</span></p>
+      </div>
+    </div>
+
+    <!-- Classic | PRO Toggle Switch -->
+    <div class="flex items-center bg-[#EAE3D2] p-1 rounded-full border border-[#D8CEB8] shadow-inner">
+      <button id="mode-classic-btn" class="px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 bg-white text-stone-900 shadow-sm">
+        Classic Office
+      </button>
+      <button id="mode-pro-btn" class="px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 text-stone-600 hover:text-stone-900 flex items-center gap-1">
+        <span>PRO</span>
+        <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-400/90 text-stone-950 font-extrabold">MEMORY</span>
+      </button>
+    </div>
+
+    <!-- Dataset Controls, Target Picker & Run Podium Button -->
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- Connection Badge -->
+      <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-[#DFD6C0] text-[11px] font-mono-code text-stone-600">
+        <span id="api-status-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
+        <span id="api-status-label">Browser AutoML</span>
+      </div>
+
+      <!-- Active Dataset Selector (Updates automatically when a CSV is uploaded!) -->
+      <select id="preset-dataset-select" class="px-2.5 py-1.5 rounded-xl bg-white border border-[#DFD6C0] text-xs font-bold text-stone-800 cursor-pointer focus:outline-none focus:border-amber-500">
+        <option value="titanic">📊 titanic.csv (Classification)</option>
+        <option value="housing">🏠 california_housing.csv (Regression)</option>
+        <option value="churn">💳 customer_churn.csv (Classification)</option>
+      </select>
+
+      <!-- Upload Custom CSV -->
+      <label class="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-50 border border-[#DFD6C0] text-xs font-bold text-stone-800 cursor-pointer transition flex items-center gap-1.5 shadow-2xs">
+        <span>📂</span>
+        <span id="upload-filename-label">Upload CSV</span>
+        <input id="csv-file-input" type="file" accept=".csv" class="hidden" />
+      </label>
+
+      <!-- Target Column Selector -->
+      <div class="flex items-center gap-1 bg-white px-2.5 py-1 rounded-xl border border-[#DFD6C0]">
+        <span class="text-[10px] font-mono-code uppercase text-stone-400 font-bold">Target:</span>
+        <select id="target-column-select" class="text-xs font-mono-code font-bold text-stone-900 bg-transparent focus:outline-none cursor-pointer"></select>
+      </div>
+
+      <!-- Run Podium Button -->
+      <button id="btn-run-podium" class="px-4 py-1.5 rounded-xl bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-stone-950 font-extrabold text-xs tracking-tight transition flex items-center gap-1.5 shadow-sm border border-amber-600 cursor-pointer">
+        <span>🚀 Run Podium</span>
+      </button>
+
+      <!-- Sound Toggle -->
+      <button id="btn-sound" class="w-8 h-8 rounded-xl bg-white hover:bg-stone-100 border border-[#DFD6C0] flex items-center justify-center text-xs cursor-pointer" title="Toggle Retro SFX">
+        🔊
+      </button>
     </div>
   </header>
 
-  <main class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+  <!-- MAIN WORKSPACE AREA -->
+  <main class="flex-1 w-full max-w-[1440px] mx-auto px-4 py-1.5 flex flex-col">
 
-    <!-- Step 1: upload -->
-    <section class="bg-white rounded-xl shadow p-6">
-      <h2 class="font-semibold text-lg mb-3">1. Upload your data</h2>
-      <label id="drop"
-             class="flex flex-col items-center justify-center border-2 border-dashed border-stone-300 rounded-lg p-8 cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
-        <span class="text-stone-600">Click to choose a .csv file</span>
-        <span class="text-xs text-stone-400 mt-1">Up to 50 MB</span>
-        <input id="file" type="file" accept=".csv" class="hidden">
-      </label>
-      <p id="upload-msg" class="text-sm mt-3 hidden"></p>
-    </section>
+    <!-- CLASSIC WORKSPACE: 2D Pixel Office + Right Inspector Sidebar -->
+    <div id="classic-workspace" class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
 
-    <!-- Step 2: choose target -->
-    <section id="target-box" class="bg-white rounded-xl shadow p-6 hidden">
-      <h2 class="font-semibold text-lg mb-1">2. What should the models predict?</h2>
-      <p id="file-info" class="text-sm text-stone-500 mb-4"></p>
-      <label class="block text-sm font-medium mb-1" for="target">Target column</label>
-      <select id="target" class="w-full border border-stone-300 rounded-lg px-3 py-2 mb-4"></select>
-      <button id="start"
-              class="bg-blue-900 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed">
-        Start training
-      </button>
-      <p id="run-msg" class="text-sm mt-3 hidden"></p>
-    </section>
+      <!-- LEFT 8 COLS: Munder Difflin Pixel Office Monitor Frame -->
+      <div class="lg:col-span-8 flex flex-col gap-2.5">
+        <div class="relative rounded-2xl bg-[#26292E] p-2.5 shadow-xl border-4 border-[#1B1E22]">
 
-    <!-- Step 3: employee cards -->
-    <section id="team-box" class="bg-white rounded-xl shadow p-6 hidden">
-      <h2 class="font-semibold text-lg mb-3">3. Your team</h2>
-      <div id="team" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
-    </section>
+          <!-- Top HUD Overlay Inside Frame -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-2 px-1 text-[11px] font-mono-code text-stone-300">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <strong class="text-white" id="hud-dataset-name">titanic.csv</strong>
+              </span>
+              <span class="text-stone-400">|</span>
+              <span>Target: <strong class="text-amber-300" id="hud-target-col">Survived</strong></span>
+              <span class="text-stone-400 hidden sm:inline">|</span>
+              <span class="hidden sm:inline">Rows: <strong class="text-white" id="hud-rows-count">891</strong></span>
+              <span class="hidden md:inline text-stone-400 text-[10px]" id="upload-sub-label">891 rows • 12 cols</span>
+            </div>
+
+            <!-- Floor Choreography Controls -->
+            <div class="flex items-center gap-1.5">
+              <button id="btn-standup" class="px-2 py-0.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-100 text-[10px] font-bold transition cursor-pointer">
+                📋 Standup
+              </button>
+              <button id="btn-queue-lounge" class="px-2 py-0.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-100 text-[10px] font-bold transition cursor-pointer">
+                ☕ Coffee Break
+              </button>
+              <button id="btn-desks" class="px-2 py-0.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-100 text-[10px] font-bold transition cursor-pointer">
+                💻 At Desks
+              </button>
+              <button id="btn-podium-ceremony" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 text-[10px] font-bold transition cursor-pointer">
+                🏆 Podium Ramp
+              </button>
+            </div>
+          </div>
+
+          <!-- Canvas Container + Crisp DOM Speech Bubble & Nameplate Overlay -->
+          <div class="relative w-full h-[540px] rounded-xl overflow-hidden border-2 border-[#16181D] bg-[#84948B]">
+            <canvas id="officeCanvas" class="w-full h-full block cursor-pointer"></canvas>
+            <!-- Vector DOM Layer for 100% Crisp Speech Bubbles & Dark Nameplates -->
+            <div id="office-dom-overlay" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+            <!-- Bottom-Left Memory Pill Badge -->
+            <div class="absolute bottom-2.5 left-2.5 pointer-events-none flex items-center gap-1.5 bg-[#1E2024]/90 border border-stone-600/80 px-2.5 py-1 rounded-md text-[10px] font-mono-code text-stone-200 shadow-md">
+              <span>🧠</span>
+              <span>memory • sklearn-gridsearch</span>
+            </div>
+
+            <!-- Toast Notification Pill -->
+            <div id="office-toast" class="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-none transition-all duration-300 opacity-0 translate-y-2 bg-stone-900/95 text-white border border-amber-400/50 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg z-30">
+              <span id="office-toast-icon">⚡</span>
+              <span id="office-toast-text">Ready</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Character Dock (Quick Select for Michael + 5 ML Models) -->
+        <div id="bottom-character-dock" class="flex items-center gap-2 overflow-x-auto pb-1"></div>
+      </div>
+
+      <!-- RIGHT 4 COLS: Live Inspector, Podium Leaderboard, Boss Logs & Insights -->
+      <div class="lg:col-span-4 bg-[#F6F1E3] rounded-2xl border-2 border-[#DFD6C0] shadow-md flex flex-col h-[635px] overflow-hidden">
+
+        <!-- Sidebar Navigation Tabs -->
+        <div class="flex items-center justify-between px-3 pt-3 border-b border-[#DFD6C0] text-xs font-extrabold bg-[#EFE8D5]">
+          <button data-tab="agents" class="sidebar-tab border-b-2 border-amber-500 text-stone-900 pb-2.5 px-2 flex items-center gap-1.5 transition cursor-pointer">
+            <span>🧑‍💻 Models</span>
+          </button>
+          <button data-tab="leaderboard" class="sidebar-tab border-b-2 border-transparent text-stone-500 hover:text-stone-800 pb-2.5 px-2 flex items-center gap-1.5 transition cursor-pointer">
+            <span>🏆 Podium</span>
+          </button>
+          <button data-tab="logs" class="sidebar-tab border-b-2 border-transparent text-stone-500 hover:text-stone-800 pb-2.5 px-2 flex items-center gap-1.5 transition cursor-pointer">
+            <span>📋 Boss Logs</span>
+          </button>
+          <button data-tab="insights" class="sidebar-tab border-b-2 border-transparent text-stone-500 hover:text-stone-800 pb-2.5 px-2 flex items-center gap-1.5 transition cursor-pointer">
+            <span>🔍 Insights</span>
+          </button>
+        </div>
+
+        <!-- TAB 1: MODELS / EMPLOYEES LIST -->
+        <div id="tab-content-agents" class="flex-1 flex flex-col p-3 overflow-hidden">
+          <div class="mb-2.5">
+            <input id="agent-search-input" type="text" placeholder="Search ML models, alias, or task..."
+                   class="w-full px-3 py-1.5 rounded-xl bg-white border border-[#DFD6C0] text-xs text-stone-800 focus:outline-none focus:border-amber-500 font-mono-code" />
+          </div>
+          <div id="sidebar-agents-list" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+        </div>
+
+        <!-- TAB 2: PODIUM LEADERBOARD -->
+        <div id="tab-content-leaderboard" class="hidden flex-1 flex flex-col p-3 overflow-y-auto space-y-3">
+          <div id="podium-top3-cards" class="grid grid-cols-3 gap-2"></div>
+          <div class="bg-white rounded-xl border border-[#DFD6C0] overflow-hidden">
+            <div class="px-3 py-2 bg-[#EFE8D5] border-b border-[#DFD6C0] text-[10px] font-mono-code font-bold uppercase text-stone-600 flex justify-between">
+              <span>Rank &amp; Model (Best Params)</span>
+              <span>Score / Time</span>
+            </div>
+            <div id="leaderboard-rows-container" class="divide-y divide-stone-100"></div>
+          </div>
+        </div>
+
+        <!-- TAB 3: BOSS LOGS (/logs/{dataset_id}) -->
+        <div id="tab-content-logs" class="hidden flex-1 flex flex-col p-3 overflow-hidden">
+          <div class="bg-[#18181B] text-stone-200 rounded-xl p-3 font-mono-code text-[11px] flex-1 overflow-y-auto space-y-1.5 border border-stone-700" id="boss-logs-container"></div>
+        </div>
+
+        <!-- TAB 4: DATASET INSIGHTS (/insights/{dataset_id}) -->
+        <div id="tab-content-insights" class="hidden flex-1 flex flex-col p-3 overflow-y-auto space-y-3">
+          <div id="insights-warnings-box" class="space-y-1.5"></div>
+          <div id="insights-stats-grid" class="grid grid-cols-2 gap-2"></div>
+          <div class="bg-white p-2.5 rounded-xl border border-[#DFD6C0]">
+            <div class="text-[10px] font-bold uppercase text-stone-400 mb-1.5">Dropped Noise Columns (drop_noise_columns)</div>
+            <div id="insights-dropped-cols" class="flex flex-wrap gap-1.5"></div>
+          </div>
+          <div class="bg-white p-2.5 rounded-xl border border-[#DFD6C0]" id="insights-target-breakdown"></div>
+        </div>
+
+        <!-- Selected Agent Footer Bar -->
+        <div class="px-3 py-2.5 bg-[#EFE8D5] border-t border-[#DFD6C0] flex items-center justify-between text-[11px]">
+          <div class="truncate pr-2">
+            <span class="text-stone-500 font-semibold">Selected:</span>
+            <strong id="footer-selected-model" class="text-stone-900 ml-1">Random Forest (Dwight)</strong>
+          </div>
+          <div id="footer-selected-params" class="font-mono-code text-[10px] text-amber-900 bg-amber-200/70 px-2 py-0.5 rounded truncate max-w-[160px]">
+            n_estimators: 200
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRO WORKSPACE: #1 Benchmarked Memory & Pipeline Layer -->
+    <div id="pro-workspace" class="hidden flex-col items-center justify-center py-8 px-4">
+      <div class="max-w-4xl w-full text-center space-y-5">
+        <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-stone-900">
+          <span class="bg-amber-300/80 px-2 py-0.5 rounded-lg">#1 benchmarked</span> AutoML memory layer
+        </h2>
+        <div class="max-w-xl mx-auto relative">
+          <input id="pro-memory-search" type="text" placeholder="Search every model's hyperparameters, CV folds, or dataset warnings..."
+                 class="w-full px-4 py-3 rounded-2xl bg-white border-2 border-[#DFD6C0] shadow-md text-sm font-mono-code focus:outline-none focus:border-amber-500" />
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono-code bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300 font-bold">Enter</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left pt-3">
+          <!-- Card 1: Who worked on it -->
+          <div class="bg-white rounded-2xl p-4 border border-[#DFD6C0] shadow-sm space-y-3">
+            <div class="text-xs font-extrabold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+              <span>👥</span> <span>Who worked on it</span>
+            </div>
+            <div id="pro-card-workers" class="space-y-2.5"></div>
+          </div>
+          <!-- Card 2: Tickets / Pipeline Steps -->
+          <div class="bg-white rounded-2xl p-4 border border-[#DFD6C0] shadow-sm space-y-3">
+            <div class="text-xs font-extrabold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+              <span>🎫</span> <span>Pipeline Tickets</span>
+            </div>
+            <div id="pro-card-tickets" class="space-y-2"></div>
+          </div>
+          <!-- Card 3: Memories & Guardrails -->
+          <div class="bg-white rounded-2xl p-4 border border-[#DFD6C0] shadow-sm space-y-3">
+            <div class="text-xs font-extrabold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+              <span>🧠</span> <span>Memories &amp; Guardrails</span>
+            </div>
+            <div id="pro-card-memories" class="space-y-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </main>
 
   <script>
-    const $ = (id) => document.getElementById(id);
-    let datasetId = null;
-    let cards = {};      // job_id -> card element
-    let jobs = [];       // latest data from /jobs
-    let pollTimer = null;
+    /********************************************************************
+     * 1. RETRO WEB AUDIO SYNTHESIZER
+     ********************************************************************/
+    class RetroSoundEngine {
+      constructor() {
+        this.enabled = true;
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+      }
+      tone(freq = 440, dur = 0.05, type = 'square', vol = 0.025) {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + dur);
+        } catch (_) {}
+      }
+      click() { this.tone(620, 0.04, 'triangle', 0.03); }
+      dispatch() {
+        this.tone(440, 0.06, 'square', 0.025);
+        setTimeout(() => this.tone(587, 0.07, 'square', 0.025), 65);
+        setTimeout(() => this.tone(880, 0.10, 'square', 0.03), 130);
+      }
+      finishModel() {
+        this.tone(523, 0.05, 'triangle', 0.025);
+        setTimeout(() => this.tone(659, 0.08, 'triangle', 0.03), 55);
+      }
+      winFanfare() {
+        [523, 659, 784, 1046].forEach((f, i) => {
+          setTimeout(() => this.tone(f, 0.11, 'square', 0.03), i * 80);
+        });
+      }
+    }
+    const sfx = new RetroSoundEngine();
 
-    const BADGE = {
-      queued:   "bg-stone-200 text-stone-700",
-      training: "bg-amber-100 text-amber-800",
-      done:     "bg-green-100 text-green-800",
-      failed:   "bg-red-100 text-red-800",
+    /********************************************************************
+     * 2. THE 5 ML MODEL EMPLOYEES + MICHAEL (BOSS) FROM train.py & main.py
+     ********************************************************************/
+    const AGENT_ROSTER = window.AGENT_ROSTER = [
+      {
+        id: 'boss',
+        alias: 'Michael',
+        isBoss: true,
+        modelName: 'BossLog Orchestrator',
+        classModel: 'BossLog Orchestrator',
+        regModel: 'BossLog Orchestrator',
+        status: 'done',
+        current_task: 'Managing Podium',
+        bubble: '< heading to desk',
+        bubbleTimer: 200,
+        skinColor: '#F3C6A0',
+        hairColor: '#3B281E',
+        suitColor: '#2B2D38',
+        shirtColor: '#FFFFFF',
+        tieColor: '#B91C1C',
+        auraColor: 'rgba(129, 140, 248, 0.28)',
+        accessory: 'boss',
+        x: 96, y: 120, targetX: 96, targetY: 120,
+        facing: 'front'
+      },
+      {
+        id: 'knn',
+        alias: 'Jim',
+        isBoss: false,
+        deskIdx: 0,
+        modelName: 'KNN',
+        classModel: 'KNN',
+        regModel: 'KNN',
+        gridDesc: 'n_neighbors: [3, 5, 9]',
+        trainingsCount: 9,
+        status: 'done',
+        score: 0.8190,
+        seconds: 1.2,
+        best_params: { n_neighbors: 5 },
+        current_task: 'Finished in 1.2s',
+        bubble: '> fetching docs',
+        bubbleTimer: 160,
+        skinColor: '#F1C29B',
+        hairColor: '#523624',
+        suitColor: '#2E3440',
+        shirtColor: '#F8FAFC',
+        tieColor: '#475569',
+        auraColor: 'rgba(56, 189, 248, 0.22)',
+        accessory: 'none',
+        x: 105, y: 332, targetX: 105, targetY: 332,
+        facing: 'back'
+      },
+      {
+        id: 'rf',
+        alias: 'Dwight',
+        isBoss: false,
+        deskIdx: 1,
+        modelName: 'Random Forest',
+        classModel: 'Random Forest',
+        regModel: 'Random Forest',
+        gridDesc: 'n_estimators: [100, 200], max_depth: [None, 10]',
+        trainingsCount: 12,
+        status: 'done',
+        score: 0.8942,
+        seconds: 2.4,
+        best_params: { n_estimators: 200, max_depth: 10 },
+        current_task: 'Finished in 2.4s',
+        bubble: '< reading SPEC.md',
+        bubbleTimer: 200,
+        skinColor: '#F0C097',
+        hairColor: '#4A3520',
+        suitColor: '#A16207',
+        shirtColor: '#FEF08A',
+        tieColor: '#713F12',
+        auraColor: 'rgba(250, 204, 21, 0.26)',
+        accessory: 'glasses_hat',
+        x: 235, y: 332, targetX: 235, targetY: 332,
+        facing: 'back'
+      },
+      {
+        id: 'nb',
+        alias: 'Kevin',
+        isBoss: false,
+        deskIdx: 2,
+        modelName: 'Naive Bayes',
+        classModel: 'Naive Bayes',
+        regModel: 'Naive Bayes',
+        gridDesc: 'var_smoothing: [1e-9, 1e-8, 1e-7]',
+        trainingsCount: 9,
+        status: 'done',
+        score: 0.7840,
+        seconds: 0.4,
+        best_params: { var_smoothing: '1e-8' },
+        current_task: 'Finished in 0.4s',
+        bubble: '< updating the todo board',
+        bubbleTimer: 180,
+        skinColor: '#F3C5A2',
+        hairColor: '#65A30D',
+        suitColor: '#EA580C',
+        shirtColor: '#FFEDD5',
+        tieColor: '#9A3412',
+        auraColor: 'rgba(251, 146, 60, 0.24)',
+        accessory: 'visor',
+        x: 365, y: 332, targetX: 365, targetY: 332,
+        facing: 'back'
+      },
+      {
+        id: 'linear',
+        alias: 'Angela',
+        isBoss: false,
+        deskIdx: 3,
+        modelName: 'Logistic Regression',
+        classModel: 'Logistic Regression',
+        regModel: 'Ridge Regression',
+        gridDesc: 'C / alpha: [0.1, 1, 10]',
+        trainingsCount: 9,
+        status: 'done',
+        score: 0.8415,
+        seconds: 0.9,
+        best_params: { C: 1.0 },
+        current_task: 'Finished in 0.9s',
+        bubble: '< searching for skill files',
+        bubbleTimer: 190,
+        skinColor: '#F7CEAD',
+        hairColor: '#D4A359',
+        suitColor: '#1E293B',
+        shirtColor: '#F1F5F9',
+        tieColor: '#334155',
+        auraColor: 'rgba(168, 85, 247, 0.22)',
+        accessory: 'cap',
+        x: 495, y: 332, targetX: 495, targetY: 332,
+        facing: 'back'
+      },
+      {
+        id: 'svm',
+        alias: 'Oscar',
+        isBoss: false,
+        deskIdx: 4,
+        modelName: 'SVM',
+        classModel: 'SVM',
+        regModel: 'SVR',
+        gridDesc: 'C: [0.1, 1, 10], kernel: [rbf, linear]',
+        trainingsCount: 18,
+        status: 'done',
+        score: 0.8670,
+        seconds: 3.1,
+        best_params: { C: 10, kernel: 'rbf' },
+        current_task: 'Finished in 3.1s',
+        bubble: '< fetching docs',
+        bubbleTimer: 170,
+        skinColor: '#DDA782',
+        hairColor: '#171717',
+        suitColor: '#312E81',
+        shirtColor: '#E0E7FF',
+        tieColor: '#1E1B4B',
+        auraColor: 'rgba(52, 211, 153, 0.24)',
+        accessory: 'hat',
+        x: 625, y: 332, targetX: 625, targetY: 332,
+        facing: 'back'
+      }
+    ];
+
+    const AMBIENT_BUBBLES = [
+      '< reading SPEC.md',
+      '< updating the todo board',
+      '< searching for skill files',
+      '> fetching docs',
+      '> running 3-fold GridSearchCV',
+      '@ heading back to desk',
+      '< checking SimpleImputer',
+      'awaiting'
+    ];
+
+    /********************************************************************
+     * 3. PRESET DATASETS & APPLICATION STATE
+     ********************************************************************/
+    const PRESET_DATASETS = {
+      titanic: {
+        dataset_id: 101,
+        filename: 'titanic.csv',
+        problem_type: 'classification',
+        target: 'Survived',
+        columns: ['PassengerId', 'Survived', 'Pclass', 'Name', 'Sex', 'Age', 'SibSp', 'Parch', 'Ticket', 'Fare', 'Cabin', 'Embarked'],
+        rows: 891,
+        numeric_features: 5,
+        text_features: 3,
+        duplicate_rows: 0,
+        dropped_columns: ['PassengerId', 'Name', 'Ticket'],
+        missing: [
+          { column: 'Cabin', missing: 687, percent: 77.1 },
+          { column: 'Age', missing: 177, percent: 19.9 },
+          { column: 'Embarked', missing: 2, percent: 0.2 }
+        ],
+        target_info: {
+          column: 'Survived',
+          type: 'classification',
+          balance_percent: { '0 (Did Not Survive)': 61.6, '1 (Survived)': 38.4 }
+        },
+        warnings: [
+          "Column 'Cabin' is 77.1% empty.",
+          "These columns were ignored as noise: PassengerId, Name, Ticket."
+        ],
+        scores: {
+          'Random Forest': { score: 0.8942, secondary: 0.8989, seconds: 2.4, params: { n_estimators: 200, max_depth: 10 } },
+          'SVM': { score: 0.8670, secondary: 0.8710, seconds: 3.1, params: { C: 10, kernel: 'rbf' } },
+          'Logistic Regression': { score: 0.8415, secondary: 0.8480, seconds: 0.9, params: { C: 1.0 } },
+          'KNN': { score: 0.8190, secondary: 0.8250, seconds: 1.2, params: { n_neighbors: 5 } },
+          'Naive Bayes': { score: 0.7840, secondary: 0.7910, seconds: 0.4, params: { var_smoothing: '1e-8' } }
+        }
+      },
+      housing: {
+        dataset_id: 102,
+        filename: 'california_housing.csv',
+        problem_type: 'regression',
+        target: 'MedHouseVal',
+        columns: ['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 'Population', 'AveOccup', 'Latitude', 'Longitude', 'MedHouseVal'],
+        rows: 20640,
+        numeric_features: 8,
+        text_features: 0,
+        duplicate_rows: 0,
+        dropped_columns: [],
+        missing: [],
+        target_info: {
+          column: 'MedHouseVal',
+          type: 'regression',
+          min: 0.15,
+          max: 5.00,
+          mean: 2.069,
+          median: 1.797
+        },
+        warnings: [
+          "Dataset > SAMPLE_LIMIT (4,000 rows): GridSearchCV tuned on 4,000 sample first.",
+          "SVR & KNN capped at SLOW_MODEL_LIMIT (20,000 rows) for final fit."
+        ],
+        scores: {
+          'Random Forest': { score: 0.8264, secondary: 0.481, seconds: 4.8, params: { n_estimators: 200, max_depth: 'None' } },
+          'SVR': { score: 0.7610, secondary: 0.552, seconds: 5.9, params: { C: 10, kernel: 'rbf' } },
+          'KNN': { score: 0.7120, secondary: 0.614, seconds: 2.1, params: { n_neighbors: 9 } },
+          'Ridge Regression': { score: 0.6480, secondary: 0.689, seconds: 0.6, params: { alpha: 1.0 } }
+        }
+      },
+      churn: {
+        dataset_id: 103,
+        filename: 'customer_churn.csv',
+        problem_type: 'classification',
+        target: 'Churn',
+        columns: ['CustomerID', 'Tenure', 'MonthlyCharges', 'TotalCharges', 'Contract', 'PaymentMethod', 'TechSupport', 'Churn'],
+        rows: 7043,
+        numeric_features: 3,
+        text_features: 3,
+        duplicate_rows: 0,
+        dropped_columns: ['CustomerID'],
+        missing: [
+          { column: 'TotalCharges', missing: 11, percent: 0.2 }
+        ],
+        target_info: {
+          column: 'Churn',
+          type: 'classification',
+          balance_percent: { 'No': 73.5, 'Yes': 26.5 }
+        },
+        warnings: [
+          "Dataset > SAMPLE_LIMIT (4,000 rows): GridSearchCV tuned on 4,000 sample first.",
+          "These columns were ignored as noise: CustomerID."
+        ],
+        scores: {
+          'Logistic Regression': { score: 0.8612, secondary: 0.8690, seconds: 1.1, params: { C: 10 } },
+          'Random Forest': { score: 0.8580, secondary: 0.8620, seconds: 3.2, params: { n_estimators: 200, max_depth: 10 } },
+          'SVM': { score: 0.8490, secondary: 0.8510, seconds: 4.1, params: { C: 1, kernel: 'rbf' } },
+          'KNN': { score: 0.7950, secondary: 0.8020, seconds: 1.8, params: { n_neighbors: 9 } },
+          'Naive Bayes': { score: 0.7620, secondary: 0.7740, seconds: 0.5, params: { var_smoothing: '1e-9' } }
+        }
+      }
     };
 
-    // Server sends UTC time without a "Z"; add it so the browser reads it as UTC
-    function parseUtc(text) {
-      if (!text) return null;
-      return new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(text) ? text : text + "Z");
+    let currentDataset = JSON.parse(JSON.stringify(PRESET_DATASETS.titanic));
+    let selectedAgent = AGENT_ROSTER[2]; // Default Dwight (Random Forest)
+    let isTrainingRun = false;
+    let globalTick = 0;
+    let bossLogs = [];
+    let liveFastApiAvailable = false;
+    let apiBaseUrl = window.location.origin;
+    let pollTimer = null;
+
+    const canvas = document.getElementById('officeCanvas');
+    const ctx = canvas ? canvas.getContext('2d') : null;
+    let cw = 860;
+    let ch = 540;
+
+    /********************************************************************
+     * 4. HI-DPI CANVAS RESIZE & OFFICE GEOMETRY COORDINATES
+     ********************************************************************/
+    function resizeOfficeCanvas() {
+      if (!canvas || !ctx) return;
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      cw = parent.clientWidth || 860;
+      ch = parent.clientHeight || 540;
+      const dpr = Math.max(2, window.devicePixelRatio || 2);
+      canvas.width = cw * dpr;
+      canvas.height = ch * dpr;
+      canvas.style.width = cw + 'px';
+      canvas.style.height = ch + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.imageSmoothingEnabled = false;
     }
 
-    function formatTime(seconds) {
-      const s = Math.max(0, Math.floor(seconds));
-      return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    window.addEventListener('resize', () => {
+      resizeOfficeCanvas();
+      if (!isTrainingRun) repositionAllDesksOnResize();
+    });
+
+    function getOfficeZones() {
+      return {
+        bossDesk: { x: 96, y: 120 },
+        confTable: { x: 255, y: 92, w: 220, h: 64 },
+        podiumCenter: { x: cw - 150, y: 145 },
+        queueLounge: { x: cw - 185, y: 445 }
+      };
     }
 
-    function renderJobs() {
-      jobs.forEach((job) => {
-        let card = cards[job.job_id];
-        if (!card) {
-          card = document.createElement("div");
-          card.className = "border border-stone-200 rounded-lg p-4";
-          card.innerHTML =
-            '<div class="flex justify-between items-start">' +
-              '<span class="font-semibold name"></span>' +
-              '<span class="text-xs px-2 py-1 rounded-full badge"></span>' +
-            '</div>' +
-            '<p class="text-sm text-stone-600 mt-2 task"></p>' +
-            '<p class="text-sm font-medium mt-2 extra"></p>';
-          $("team").appendChild(card);
-          cards[job.job_id] = card;
-        }
-        card.querySelector(".name").textContent = job.model;
-        const badge = card.querySelector(".badge");
-        badge.textContent = job.status;
-        badge.className = "text-xs px-2 py-1 rounded-full badge " + (BADGE[job.status] || BADGE.queued);
-        card.querySelector(".task").textContent =
-          job.status === "failed" && job.error ? job.error : (job.current_task || "");
-        card.dataset.status = job.status;
-        card.dataset.started = job.started_at || "";
-        card.dataset.score = job.score == null ? "" : job.score;
-      });
-      tickTimers();
+    function getDeskPosition(deskIdx) {
+      const leftMargin = 95;
+      const usableWidth = Math.min(540, cw - 310);
+      const stepX = usableWidth / 4;
+      return {
+        x: Math.round(leftMargin + deskIdx * stepX),
+        y: 345
+      };
     }
 
-    // Runs every second: live timer for training cards, score for done cards
-    function tickTimers() {
-      Object.values(cards).forEach((card) => {
-        const extra = card.querySelector(".extra");
-        if (card.dataset.status === "training" && card.dataset.started) {
-          const started = parseUtc(card.dataset.started);
-          extra.textContent = "Working: " + formatTime((Date.now() - started) / 1000);
-        } else if (card.dataset.status === "done" && card.dataset.score !== "") {
-          extra.textContent = "Score: " + Number(card.dataset.score).toFixed(4);
+    function getQueuePosition(idx) {
+      const baseX = cw - 205;
+      const baseY = 435;
+      return {
+        x: baseX + (idx % 3) * 44,
+        y: baseY + Math.floor(idx / 3) * 34
+      };
+    }
+
+    function getPodiumPosition(rank) {
+      const cx = cw - 140;
+      const cy = 138;
+      if (rank === 1) return { x: cx, y: cy - 12 };
+      if (rank === 2) return { x: cx - 54, y: cy + 4 };
+      if (rank === 3) return { x: cx + 54, y: cy + 8 };
+      return { x: cx - 45 + (rank - 4) * 90, y: cy + 54 };
+    }
+
+    function repositionAllDesksOnResize() {
+      AGENT_ROSTER.forEach((ag) => {
+        if (ag.isBoss) {
+          ag.x = 96; ag.y = 120;
+          ag.targetX = 96; ag.targetY = 120;
+          ag.facing = 'front';
         } else {
-          extra.textContent = "";
+          const dp = getDeskPosition(ag.deskIdx);
+          ag.x = dp.x; ag.y = dp.y;
+          ag.targetX = dp.x; ag.targetY = dp.y;
+          ag.facing = 'back';
         }
       });
     }
 
-    async function poll() {
-      try {
-        const res = await fetch("/jobs/" + datasetId);
-        if (!res.ok) return;
-        jobs = await res.json();
-        renderJobs();
-        const finished = jobs.length > 0 &&
-          jobs.every((j) => j.status === "done" || j.status === "failed");
-        if (finished) {
-          clearInterval(pollTimer);
-          pollTimer = null;
-          $("start").disabled = false;
-        }
-      } catch (err) {
-        // server hiccup: try again on the next tick
+    /********************************************************************
+     * 5. PIXEL-ART ARCHITECTURAL FLOORPLAN, 3-PLANK DESKS & PODIUM RAMP
+     ********************************************************************/
+    function drawSteppedCross(x, y) {
+      ctx.fillStyle = '#73837A';
+      ctx.fillRect(x - 6, y - 2, 12, 4);
+      ctx.fillRect(x - 2, y - 6, 4, 12);
+    }
+
+    function draw3PlankComputerDesk(dx, dy, isOccupied, isBossDesk) {
+      const w = 78;
+      const h = 42;
+      const x = Math.round(dx - w / 2);
+      const y = Math.round(dy - h / 2);
+
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.fillRect(x - 2, y + 6, w + 4, h + 4);
+
+      ctx.fillStyle = '#3E2E1E';
+      ctx.fillRect(x + 4, y + h - 2, 10, 9);
+      ctx.fillRect(x + w - 14, y + h - 2, 10, 9);
+      ctx.fillStyle = '#6E553B';
+      ctx.fillRect(x + 6, y + h - 2, 6, 7);
+      ctx.fillRect(x + w - 12, y + h - 2, 6, 7);
+
+      ctx.fillStyle = '#3B2B1D';
+      ctx.fillRect(x, y, w, h);
+
+      const plankColors = ['#8F7453', '#846A4B', '#7A6042'];
+      const plankH = 12;
+      for (let i = 0; i < 3; i++) {
+        ctx.fillStyle = plankColors[i];
+        ctx.fillRect(x + 2, y + 2 + i * (plankH + 1), w - 4, plankH);
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.fillRect(x + 2, y + 2 + i * (plankH + 1), w - 4, 2);
+      }
+      ctx.fillStyle = '#533E2B';
+      ctx.fillRect(x + 2, y + h - 4, w - 4, 2);
+
+      if (isBossDesk) {
+        // Michael's Desk Props
+        ctx.fillStyle = '#27272A';
+        ctx.fillRect(x + 9, y + 12, 11, 13);
+        ctx.fillStyle = '#D4D4D8';
+        ctx.fillRect(x + 10, y + 13, 9, 6);
+        ctx.fillStyle = '#A16207';
+        ctx.fillRect(x + 10, y + 19, 9, 5);
+        ctx.fillStyle = '#D4D4D8';
+        ctx.fillRect(x + 7, y + 15, 2, 6);
+
+        ctx.fillStyle = '#27272A';
+        ctx.fillRect(x + 27, y + 10, 24, 18);
+        ctx.fillStyle = '#9CA3AF';
+        ctx.fillRect(x + 29, y + 12, 20, 14);
+        ctx.fillStyle = '#CBD5E1';
+        ctx.fillRect(x + 31, y + 15, 16, 8);
+
+        ctx.fillStyle = '#1E293B';
+        ctx.fillRect(x + 56, y + 10, 15, 18);
+        ctx.fillStyle = '#3B7A57';
+        ctx.fillRect(x + 58, y + 12, 11, 13);
+        ctx.fillStyle = '#E2E8F0';
+        ctx.fillRect(x + 60, y + 19, 7, 2);
+        ctx.fillRect(x + 58, y + 25, 11, 2);
+
+        const cx = dx - 11;
+        const cy = y + h + 11;
+        ctx.fillStyle = '#3B2B1D';
+        ctx.fillRect(cx, cy, 22, 20);
+        ctx.fillStyle = '#8C7252';
+        ctx.fillRect(cx + 2, cy + 2, 18, 15);
+        ctx.fillStyle = '#755D41';
+        ctx.fillRect(cx + 5, cy + 2, 12, 14);
+        return;
+      }
+
+      const mx = Math.round(dx - 16);
+      const my = y - 12;
+
+      ctx.fillStyle = '#3F3F46';
+      ctx.fillRect(dx - 5, my + 21, 10, 5);
+      ctx.fillStyle = '#71717A';
+      ctx.fillRect(dx - 8, my + 24, 16, 3);
+
+      ctx.fillStyle = '#27272A';
+      ctx.fillRect(mx, my, 32, 22);
+      ctx.fillStyle = '#9CA3AF';
+      ctx.fillRect(mx + 1, my + 1, 30, 20);
+
+      if (isOccupied) {
+        ctx.fillStyle = '#5383EC';
+        ctx.fillRect(mx + 3, my + 3, 26, 16);
+        ctx.fillStyle = '#93C5FD';
+        ctx.fillRect(mx + 5, my + 5, 10, 2);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(mx + 5, my + 14, 16, 2);
+      } else {
+        ctx.fillStyle = '#27272A';
+        ctx.fillRect(mx + 3, my + 3, 26, 16);
+        ctx.fillStyle = '#3F3F46';
+        ctx.fillRect(mx + 5, my + 5, 8, 2);
+      }
+
+      ctx.fillStyle = '#52525B';
+      ctx.fillRect(dx - 11, y + 17, 18, 7);
+      ctx.fillStyle = '#D4D4D8';
+      ctx.fillRect(dx - 10, y + 18, 16, 5);
+      ctx.fillStyle = '#D4D4D8';
+      ctx.fillRect(dx + 11, y + 18, 4, 6);
+
+      if (!isOccupied) {
+        const cx = dx - 11;
+        const cy = y + h + 6;
+        ctx.fillStyle = '#3B2B1D';
+        ctx.fillRect(cx, cy, 22, 18);
+        ctx.fillStyle = '#8C7252';
+        ctx.fillRect(cx + 2, cy + 2, 18, 14);
       }
     }
 
-    function startPolling() {
-      if (pollTimer) clearInterval(pollTimer);
-      poll();
-      pollTimer = setInterval(poll, 2000);
+    function drawPodiumRampStage() {
+      const px = cw - 220;
+      const py = 58;
+      const pw = 165;
+      const ph = 128;
+
+      // Red Velvet Carpet Runner under Podium
+      ctx.fillStyle = '#4C1D24';
+      ctx.fillRect(px, py + 24, pw, ph - 18);
+      ctx.fillStyle = '#7F1D1D';
+      ctx.fillRect(px + 3, py + 27, pw - 6, ph - 24);
+      ctx.fillStyle = '#F59E0B';
+      ctx.fillRect(px + 3, py + 27, pw - 6, 2);
+      ctx.fillRect(px + 3, py + ph + 1, pw - 6, 2);
+
+      // Podium Header Banner on Top Wall — Strictly "🏆 PODIUM RAMP"
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(px + 25, py - 18, 115, 18);
+      ctx.fillStyle = '#F59E0B';
+      ctx.font = '800 9.5px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏆 PODIUM RAMP', px + 83, py - 6);
+
+      // 2ND Place Step (Left, Silver)
+      const s2x = px + 14;
+      const s2y = py + 66;
+      ctx.fillStyle = '#1E293B';
+      ctx.fillRect(s2x, s2y, 44, 36);
+      ctx.fillStyle = '#94A3B8';
+      ctx.fillRect(s2x + 2, s2y + 2, 40, 10);
+      ctx.fillStyle = '#64748B';
+      ctx.fillRect(s2x + 2, s2y + 12, 40, 22);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 10px "JetBrains Mono", monospace';
+      ctx.fillText('2ND', s2x + 22, s2y + 26);
+
+      // 1ST Place Step (Center Elevated, Gold)
+      const s1x = px + 60;
+      const s1y = py + 50;
+      ctx.fillStyle = '#451A03';
+      ctx.fillRect(s1x, s1y, 46, 52);
+      ctx.fillStyle = '#FDE047';
+      ctx.fillRect(s1x + 2, s1y + 2, 42, 12);
+      ctx.fillStyle = '#EAB308';
+      ctx.fillRect(s1x + 2, s1y + 14, 42, 36);
+      ctx.fillStyle = '#1C1917';
+      ctx.font = '900 11px "JetBrains Mono", monospace';
+      ctx.fillText('1ST', s1x + 23, s1y + 35);
+
+      // 3RD Place Step (Right, Bronze)
+      const s3x = px + 108;
+      const s3y = py + 72;
+      ctx.fillStyle = '#431407';
+      ctx.fillRect(s3x, s3y, 44, 30);
+      ctx.fillStyle = '#FDBA74';
+      ctx.fillRect(s3x + 2, s3y + 2, 40, 9);
+      ctx.fillStyle = '#EA580C';
+      ctx.fillRect(s3x + 2, s3y + 11, 40, 17);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 10px "JetBrains Mono", monospace';
+      ctx.fillText('3RD', s3x + 22, s3y + 23);
+      ctx.textAlign = 'left';
     }
 
-    setInterval(tickTimers, 1000);
+    function drawOfficeFloorplan() {
+      ctx.fillStyle = '#84948B';
+      ctx.fillRect(0, 0, cw, ch);
 
-    function showMsg(el, text, isError) {
-      el.textContent = text;
-      el.className = "text-sm mt-3 " + (isError ? "text-red-600" : "text-green-700");
+      const tile = 48;
+      ctx.fillStyle = '#78887F';
+      for (let x = tile; x < cw; x += tile) {
+        ctx.fillRect(x, 0, 2, ch);
+      }
+      for (let y = tile; y < ch; y += tile) {
+        ctx.fillRect(0, y, cw, 2);
+      }
+      for (let x = tile; x < cw; x += tile) {
+        for (let y = tile; y < ch; y += tile) {
+          drawSteppedCross(x + 1, y + 1);
+        }
+      }
+
+      ctx.fillStyle = '#B0B5BA';
+      ctx.fillRect(0, 0, cw, 8);
+      ctx.fillStyle = '#6C737A';
+      ctx.fillRect(0, 8, cw, 24);
+      ctx.fillStyle = '#2D3238';
+      ctx.fillRect(0, 32, cw, 4);
+
+      [290, 390].forEach((wx) => {
+        ctx.fillStyle = '#374151';
+        ctx.fillRect(wx, 10, 44, 18);
+        ctx.fillStyle = '#93C5FD';
+        ctx.fillRect(wx + 3, 13, 17, 12);
+        ctx.fillRect(wx + 24, 13, 17, 12);
+      });
+
+      ctx.fillStyle = '#DC2626';
+      ctx.fillRect(122, 8, 22, 6);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(122, 14, 22, 14);
+      ctx.fillStyle = '#1F2937';
+      ctx.fillRect(125, 17, 4, 3);
+      ctx.fillRect(131, 17, 4, 3);
+      ctx.fillRect(137, 17, 4, 3);
+
+      ctx.fillStyle = '#B0B5BA';
+      ctx.fillRect(0, 210, 170, 8);
+      ctx.fillStyle = '#6C737A';
+      ctx.fillRect(0, 218, 170, 26);
+      ctx.fillStyle = '#2D3238';
+      ctx.fillRect(0, 244, 170, 4);
+
+      ctx.fillStyle = '#B0B5BA';
+      ctx.fillRect(210, 210, 340, 8);
+      ctx.fillStyle = '#6C737A';
+      ctx.fillRect(210, 218, 340, 32);
+      ctx.fillStyle = '#2D3238';
+      ctx.fillRect(210, 250, 340, 4);
+
+      ctx.fillStyle = '#4B3621';
+      ctx.fillRect(228, 222, 54, 24);
+      ctx.fillStyle = '#DDA15E';
+      ctx.fillRect(230, 224, 50, 20);
+
+      ctx.fillStyle = '#4B3621';
+      ctx.fillRect(288, 222, 54, 24);
+      ctx.fillStyle = '#E9C46A';
+      ctx.fillRect(290, 224, 50, 20);
+
+      const alarms = [{ x: 65, y: 230 }, { x: 255, y: 20 }, { x: 525, y: 20 }];
+      alarms.forEach(al => {
+        const grad = ctx.createRadialGradient(al.x, al.y, 2, al.x, al.y, 26);
+        grad.addColorStop(0, 'rgba(239, 68, 68, 0.28)');
+        grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(al.x, al.y, 26, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#EF4444';
+        ctx.fillRect(al.x - 3, al.y - 3, 6, 6);
+        ctx.fillStyle = '#FCA5A5';
+        ctx.fillRect(al.x - 1, al.y - 1, 2, 2);
+      });
+
+      const conf = getOfficeZones().confTable;
+      for (let i = 0; i < 4; i++) {
+        const chX = conf.x + 22 + i * 38;
+        ctx.fillStyle = '#3B1D2E';
+        ctx.fillRect(chX, conf.y - 14, 22, 14);
+        ctx.fillStyle = '#703853';
+        ctx.fillRect(chX + 2, conf.y - 12, 18, 10);
+
+        ctx.fillStyle = '#3B1D2E';
+        ctx.fillRect(chX, conf.y + conf.h, 22, 14);
+        ctx.fillStyle = '#703853';
+        ctx.fillRect(chX + 2, conf.y + conf.h + 2, 18, 10);
+      }
+      ctx.fillStyle = '#3B2B1D';
+      ctx.fillRect(conf.x, conf.y, conf.w, conf.h);
+      ctx.fillStyle = '#9C7A54';
+      ctx.fillRect(conf.x + 3, conf.y + 3, conf.w - 6, conf.h - 6);
+      ctx.fillStyle = '#8B6B47';
+      ctx.fillRect(conf.x + 8, conf.y + 8, conf.w - 16, conf.h - 16);
+      ctx.fillStyle = '#15803D';
+      ctx.fillRect(conf.x + 14, conf.y + 22, 12, 12);
+      ctx.fillStyle = '#9CA3AF';
+      ctx.fillRect(conf.x + conf.w - 30, conf.y + 18, 16, 22);
+
+      drawPodiumRampStage();
+
+      const kx = cw - 235;
+      const ky = 472;
+      ctx.fillStyle = '#27272A';
+      ctx.fillRect(kx, ky, 96, 36);
+      ctx.fillStyle = '#D6D3D1';
+      ctx.fillRect(kx + 2, ky + 2, 92, 18);
+      ctx.fillStyle = '#78716C';
+      ctx.fillRect(kx + 2, ky + 20, 92, 14);
+      ctx.fillStyle = '#3F3F46';
+      ctx.fillRect(kx + 6, ky - 12, 20, 22);
+      ctx.fillStyle = '#D4D4D8';
+      ctx.fillRect(kx + 8, ky - 10, 16, 6);
+      ctx.fillStyle = '#3B82F6';
+      ctx.fillRect(kx + 34, ky + 4, 8, 8);
+      ctx.fillStyle = '#F59E0B';
+      ctx.fillRect(kx + 46, ky + 4, 8, 8);
+      ctx.fillStyle = '#94A3B8';
+      ctx.fillRect(kx + 66, ky + 4, 22, 12);
+      ctx.fillStyle = '#CBD5E1';
+      ctx.fillRect(kx + 68, ky + 6, 18, 8);
+
+      ctx.fillStyle = '#27272A';
+      ctx.fillRect(kx + 100, ky - 20, 34, 56);
+      ctx.fillStyle = '#9CA3AF';
+      ctx.fillRect(kx + 102, ky - 18, 30, 22);
+      ctx.fillRect(kx + 102, ky + 6, 30, 28);
+      ctx.fillStyle = '#4B5563';
+      ctx.fillRect(kx + 127, ky - 12, 2, 12);
+      ctx.fillRect(kx + 127, ky + 10, 2, 14);
+
+      ctx.fillStyle = '#27272A';
+      ctx.fillRect(kx + 138, ky - 18, 52, 54);
+      ctx.fillStyle = '#78716C';
+      ctx.fillRect(kx + 140, ky - 16, 48, 50);
+      const shelfColors = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'];
+      for (let row = 0; row < 3; row++) {
+        ctx.fillStyle = '#27272A';
+        ctx.fillRect(kx + 142, ky - 12 + row * 15, 44, 11);
+        for (let b = 0; b < 6; b++) {
+          ctx.fillStyle = shelfColors[(row + b) % shelfColors.length];
+          ctx.fillRect(kx + 144 + b * 7, ky - 10 + row * 15, 5, 9);
+        }
+      }
+
+      const sx = cw - 120;
+      const sy = 278;
+      ctx.fillStyle = '#2D3732';
+      ctx.fillRect(sx, sy, 74, 88);
+      ctx.fillStyle = '#9AB399';
+      ctx.fillRect(sx + 2, sy + 2, 70, 84);
+      ctx.fillStyle = '#525E58';
+      ctx.fillRect(sx + 22, sy + 20, 36, 48);
+      ctx.fillStyle = '#7A8B82';
+      ctx.fillRect(sx + 26, sy + 24, 28, 40);
+
+      draw3PlankComputerDesk(96, 145, false, true);
+
+      for (let i = 0; i < 5; i++) {
+        const dp = getDeskPosition(i);
+        const emp = AGENT_ROSTER.find(a => !a.isBoss && a.deskIdx === i);
+        const isSeatedHere = emp && Math.hypot(emp.x - dp.x, emp.y - dp.y) < 12;
+        draw3PlankComputerDesk(dp.x, dp.y - 26, isSeatedHere, false);
+      }
     }
 
-    $("file").addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+    /********************************************************************
+     * 6. HIGH-DEFINITION 16-BIT RPG CHARACTER SPRITE RENDERER
+     ********************************************************************/
+    function drawCharacterMiniature(ag, bobOffset) {
+      const x = Math.round(ag.x);
+      const y = Math.round(ag.y + bobOffset);
 
-      const msg = $("upload-msg");
-      showMsg(msg, "Uploading " + file.name + " ...", false);
-      $("target-box").classList.add("hidden");
-      $("team-box").classList.add("hidden");
-      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      ctx.fillStyle = ag.auraColor || 'rgba(148, 163, 184, 0.22)';
+      ctx.beginPath();
+      ctx.arc(x, y - 6, 23, 0, Math.PI * 2);
+      ctx.fill();
 
-      const form = new FormData();
-      form.append("file", file);
+      const dp = !ag.isBoss ? getDeskPosition(ag.deskIdx) : null;
+      const isSeatedAtDesk = dp && Math.hypot(ag.x - dp.x, ag.y - dp.y) < 12;
 
-      try {
-        const res = await fetch("/upload", { method: "POST", body: form });
-        const data = await res.json();
-        if (!res.ok) {
-          showMsg(msg, data.detail || "Upload failed", true);
-          return;
+      if (isSeatedAtDesk) {
+        ctx.fillStyle = '#27272A';
+        ctx.fillRect(x - 10, y + 4, 20, 14);
+        ctx.fillStyle = '#786248';
+        ctx.fillRect(x - 8, y + 6, 16, 10);
+
+        ctx.fillStyle = '#18181B';
+        ctx.fillRect(x - 11, y - 6, 22, 13);
+        ctx.fillStyle = ag.suitColor;
+        ctx.fillRect(x - 9, y - 4, 18, 10);
+
+        ctx.fillStyle = '#18181B';
+        ctx.fillRect(x - 11, y - 25, 22, 20);
+        ctx.fillStyle = ag.skinColor;
+        ctx.fillRect(x - 10, y - 16, 20, 6);
+        ctx.fillStyle = ag.hairColor;
+        ctx.fillRect(x - 9, y - 23, 18, 15);
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.fillRect(x - 5, y - 22, 2, 13);
+        ctx.fillRect(x + 3, y - 22, 2, 13);
+
+        drawCharacterHat(ag, x, y - 25);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(x + 10, y - 13, 3, 3);
+        return;
+      }
+
+      const isWalking = Math.hypot(ag.targetX - ag.x, ag.targetY - ag.y) > 2;
+      const legSwing = isWalking ? Math.round(Math.sin(globalTick * 0.35) * 3) : 0;
+
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(x - 8, y + 7, 7, 10 + legSwing);
+      ctx.fillRect(x + 1, y + 7, 7, 10 - legSwing);
+      ctx.fillStyle = '#1E293B';
+      ctx.fillRect(x - 6, y + 8, 4, 7 + legSwing);
+      ctx.fillRect(x + 2, y + 8, 4, 7 - legSwing);
+
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(x - 12, y - 6, 24, 15);
+      ctx.fillStyle = ag.suitColor;
+      ctx.fillRect(x - 10, y - 4, 20, 12);
+
+      ctx.fillStyle = ag.shirtColor || '#FFFFFF';
+      ctx.fillRect(x - 4, y - 4, 8, 8);
+      ctx.fillStyle = ag.tieColor || '#B91C1C';
+      ctx.fillRect(x - 2, y - 2, 4, 7);
+
+      ctx.fillStyle = ag.skinColor;
+      ctx.fillRect(x - 12, y + 4, 3, 4);
+      ctx.fillRect(x + 9, y + 4, 3, 4);
+
+      const hy = y - 26;
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(x - 11, hy, 22, 21);
+
+      ctx.fillStyle = ag.skinColor;
+      ctx.fillRect(x - 9, hy + 4, 18, 15);
+      ctx.fillStyle = 'rgba(180, 110, 75, 0.28)';
+      ctx.fillRect(x + 5, hy + 7, 4, 11);
+
+      ctx.fillStyle = ag.hairColor;
+      ctx.fillRect(x - 9, hy + 2, 18, 5);
+      ctx.fillRect(x - 9, hy + 5, 3, 5);
+      ctx.fillRect(x + 6, hy + 5, 3, 5);
+
+      ctx.fillStyle = ag.hairColor;
+      ctx.fillRect(x - 6, hy + 8, 4, 1);
+      ctx.fillRect(x + 2, hy + 8, 4, 1);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(x - 6, hy + 10, 4, 2);
+      ctx.fillRect(x + 2, hy + 10, 4, 2);
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(x - 5, hy + 10, 2, 2);
+      ctx.fillRect(x + 3, hy + 10, 2, 2);
+
+      ctx.fillStyle = '#C88D68';
+      ctx.fillRect(x - 1, hy + 12, 2, 2);
+
+      ctx.fillStyle = '#993D3D';
+      ctx.fillRect(x - 4, hy + 15, 8, 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(x - 4, hy + 15, 2, 1);
+      ctx.fillRect(x + 2, hy + 15, 2, 1);
+
+      drawCharacterHat(ag, x, hy);
+    }
+
+    function drawCharacterHat(ag, x, topY) {
+      if (ag.accessory === 'glasses_hat') {
+        ctx.fillStyle = '#451A03';
+        ctx.fillRect(x - 13, topY - 1, 26, 5);
+        ctx.fillStyle = '#FCD34D';
+        ctx.fillRect(x - 11, topY - 4, 22, 5);
+        ctx.fillStyle = '#B45309';
+        ctx.fillRect(x - 9, topY - 1, 18, 2);
+      } else if (ag.accessory === 'cap') {
+        ctx.fillStyle = '#1E1B4B';
+        ctx.fillRect(x - 11, topY - 3, 22, 6);
+        ctx.fillStyle = '#FACC15';
+        ctx.fillRect(x - 2, topY - 2, 4, 2);
+      } else if (ag.accessory === 'hat') {
+        ctx.fillStyle = '#171717';
+        ctx.fillRect(x - 12, topY - 1, 24, 4);
+        ctx.fillRect(x - 8, topY - 4, 16, 4);
+      }
+    }
+
+    function drawPixelAvatarToCanvas(cv, ag) {
+      if (!cv) return;
+      const c = cv.getContext('2d');
+      c.imageSmoothingEnabled = false;
+      c.clearRect(0, 0, cv.width, cv.height);
+
+      const x = 14;
+      const hy = 3;
+      c.fillStyle = '#18181B';
+      c.fillRect(x - 9, hy, 18, 18);
+      c.fillStyle = ag.skinColor;
+      c.fillRect(x - 7, hy + 3, 14, 13);
+      c.fillStyle = ag.hairColor;
+      c.fillRect(x - 7, hy + 1, 14, 4);
+      c.fillStyle = '#FFFFFF';
+      c.fillRect(x - 5, hy + 8, 3, 2);
+      c.fillRect(x + 2, hy + 8, 3, 2);
+      c.fillStyle = '#18181B';
+      c.fillRect(x - 4, hy + 8, 2, 2);
+      c.fillRect(x + 3, hy + 8, 2, 2);
+      c.fillStyle = '#993D3D';
+      c.fillRect(x - 3, hy + 12, 6, 2);
+      c.fillStyle = ag.suitColor;
+      c.fillRect(x - 9, hy + 18, 18, 7);
+      c.fillStyle = '#FFFFFF';
+      c.fillRect(x - 3, hy + 18, 6, 5);
+      c.fillStyle = ag.tieColor || '#B91C1C';
+      c.fillRect(x - 1, hy + 19, 2, 5);
+    }
+
+    /********************************************************************
+     * 7. AGENT MOVEMENT, AUTONOMOUS OFFICE LIFE & DOM OVERLAY RENDERER
+     ********************************************************************/
+    function updateAndDrawAgents() {
+      const domOverlay = document.getElementById('office-dom-overlay');
+      if (!domOverlay) return;
+
+      const activeAgents = getActiveAgentsForProblem();
+
+      if (!isTrainingRun && globalTick % 240 === 0) {
+        const workers = activeAgents.filter(a => !a.isBoss);
+        const randomWorker = workers[Math.floor(Math.random() * workers.length)];
+        if (randomWorker) {
+          const dp = getDeskPosition(randomWorker.deskIdx);
+          const atDesk = Math.hypot(randomWorker.x - dp.x, randomWorker.y - dp.y) < 15;
+          if (atDesk && Math.random() < 0.45) {
+            const spots = [
+              { x: cw - 190, y: 455, msg: '< grabbing espresso ☕' },
+              { x: cw - 85, y: 455, msg: '< heading to shelf' },
+              { x: 310, y: 262, msg: '< updating the todo board' }
+            ];
+            const pick = spots[Math.floor(Math.random() * spots.length)];
+            randomWorker.targetX = pick.x;
+            randomWorker.targetY = pick.y;
+            randomWorker.bubble = pick.msg;
+          } else {
+            randomWorker.targetX = dp.x;
+            randomWorker.targetY = dp.y;
+            randomWorker.bubble = AMBIENT_BUBBLES[Math.floor(Math.random() * AMBIENT_BUBBLES.length)];
+          }
+        }
+      }
+
+      const sorted = [...activeAgents].sort((a, b) => a.y - b.y);
+      let overlayHtml = '';
+
+      sorted.forEach((ag) => {
+        const dx = ag.targetX - ag.x;
+        const dy = ag.targetY - ag.y;
+        const dist = Math.hypot(dx, dy);
+        let bob = 0;
+
+        if (dist > 1.8) {
+          const speed = isTrainingRun ? 2.8 : 1.75;
+          ag.x += (dx / dist) * speed;
+          ag.y += (dy / dist) * speed;
+          bob = Math.sin(globalTick * 0.4) * 2;
         }
 
-        datasetId = data.dataset_id;
-        showMsg(msg, "Uploaded: " + data.filename, false);
+        drawCharacterMiniature(ag, bob);
 
-        $("file-info").textContent = data.rows + " rows, " + data.columns.length + " columns";
-        $("target").innerHTML = "";
-        data.columns.forEach((col) => {
-          const opt = document.createElement("option");
-          opt.value = col;
-          opt.textContent = col;
-          $("target").appendChild(opt);
+        const isSelected = selectedAgent && selectedAgent.id === ag.id;
+        const bubbleText = ag.bubble || ag.current_task || 'awaiting';
+        const bx = Math.round(ag.x);
+        const by = Math.round(ag.y - 38);
+        const ny = Math.round(ag.y + 11);
+
+        overlayHtml += `
+          <div class="absolute transform -translate-x-1/2 -translate-y-full flex flex-col items-center" style="left:${bx}px; top:${by}px;">
+            <div class="pixel-speech-bubble ${isSelected ? 'active-selected' : ''}">${bubbleText}</div>
+            <div class="flex flex-col items-start w-4 mt-0.5 ml-2">
+              <div class="w-1.5 h-1.5 bg-white border border-stone-800 rounded-full"></div>
+              <div class="w-1 h-1 bg-white border border-stone-800 rounded-full -ml-1 mt-0.5"></div>
+            </div>
+          </div>
+          <div class="absolute transform -translate-x-1/2" style="left:${bx}px; top:${ny}px;">
+            <div class="pixel-nameplate">${ag.alias}</div>
+          </div>
+        `;
+      });
+
+      domOverlay.innerHTML = overlayHtml;
+    }
+
+    /********************************************************************
+     * 8. SIDEBAR, LEADERBOARD, LOGS & INSIGHTS RENDERERS
+     ********************************************************************/
+    function getActiveAgentsForProblem() {
+      const isReg = currentDataset.problem_type === 'regression';
+      return AGENT_ROSTER.filter(a => {
+        if (a.isBoss) return true;
+        if (isReg && a.id === 'nb') return false;
+        return true;
+      });
+    }
+
+    function syncModelNamesWithProblemType() {
+      const isReg = currentDataset.problem_type === 'regression';
+      AGENT_ROSTER.forEach(a => {
+        if (!a.isBoss) {
+          a.modelName = isReg ? a.regModel : a.classModel;
+        }
+      });
+      const badge = document.getElementById('header-problem-badge');
+      if (badge) {
+        const count = isReg ? 4 : 5;
+        badge.textContent = `${currentDataset.problem_type} // ${count} models`;
+      }
+      updateDatasetDropdownLabel();
+    }
+
+    function updateDatasetDropdownLabel() {
+      const presetSel = document.getElementById('preset-dataset-select');
+      if (!presetSel) return;
+      const modeLabel = currentDataset.problem_type === 'regression' ? 'Regression' : 'Classification';
+      let customOpt = document.getElementById('custom-uploaded-dataset-option');
+      const isPreset = Object.values(PRESET_DATASETS).some(p => p.filename === currentDataset.filename && !currentDataset.isCustomUpload);
+
+      if (!isPreset) {
+        if (!customOpt) {
+          customOpt = document.createElement('option');
+          customOpt.id = 'custom-uploaded-dataset-option';
+          customOpt.value = 'custom';
+          presetSel.prepend(customOpt);
+        }
+        customOpt.textContent = `📂 ${currentDataset.filename} (${modeLabel})`;
+        presetSel.value = 'custom';
+      }
+    }
+
+    function getWinnerAgent() {
+      const active = getActiveAgentsForProblem().filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number');
+      if (active.length === 0) return null;
+      return [...active].sort((a, b) => b.score - a.score)[0];
+    }
+
+    function renderBottomCharacterDock() {
+      const dock = document.getElementById('bottom-character-dock');
+      if (!dock) return;
+
+      const active = getActiveAgentsForProblem();
+      dock.innerHTML = active.map(ag => {
+        const isSelected = selectedAgent && selectedAgent.id === ag.id;
+        const isWinner = getWinnerAgent() && getWinnerAgent().id === ag.id;
+        const statusBadgeClass =
+          ag.status === 'done' ? 'bg-emerald-100 text-emerald-800' :
+          ag.status === 'training' ? 'bg-amber-200 text-amber-900 animate-pulse' :
+          ag.status === 'failed' ? 'bg-rose-100 text-rose-800' :
+          'bg-stone-200 text-stone-700';
+
+        return `
+          <div onclick="selectAgentFromDock('${ag.id}')"
+               class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border cursor-pointer transition shrink-0 ${
+                 isSelected ? 'bg-amber-100/95 border-amber-500 shadow-xs' : 'bg-white hover:bg-stone-50 border-[#DFD6C0]'
+               }">
+            <div class="w-8 h-8 rounded-lg bg-[#E5DEC9] border border-stone-400 flex items-center justify-center overflow-hidden shrink-0">
+              <canvas id="dock-avatar-${ag.id}" width="28" height="28" class="w-7 h-7"></canvas>
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-extrabold text-xs text-stone-900">${isWinner ? '👑 ' : ''}${ag.alias}</span>
+                <span class="text-[10px] font-mono-code px-1.5 py-0.2 rounded font-bold ${statusBadgeClass}">${ag.status}</span>
+              </div>
+              <div class="text-[10px] font-mono-code text-stone-500 truncate max-w-[135px]">
+                ${ag.modelName} ${typeof ag.score === 'number' ? '• ' + ag.score.toFixed(4) : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      active.forEach(ag => {
+        const cvEl = document.getElementById(`dock-avatar-${ag.id}`);
+        if (cvEl) drawPixelAvatarToCanvas(cvEl, ag);
+      });
+    }
+
+    window.selectAgentFromDock = function(id) {
+      const found = AGENT_ROSTER.find(a => a.id === id);
+      if (found) {
+        selectedAgent = found;
+        sfx.click();
+        updateSelectedAgentFooter();
+        renderBottomCharacterDock();
+        renderSidebarAgentsList();
+      }
+    };
+
+    function renderSidebarAgentsList() {
+      const listEl = document.getElementById('sidebar-agents-list');
+      if (!listEl) return;
+
+      const searchQ = (document.getElementById('agent-search-input').value || '').toLowerCase();
+      const active = getActiveAgentsForProblem().filter(a => !a.isBoss);
+
+      const filtered = active.filter(ag =>
+        !searchQ ||
+        ag.alias.toLowerCase().includes(searchQ) ||
+        ag.modelName.toLowerCase().includes(searchQ) ||
+        (ag.current_task && ag.current_task.toLowerCase().includes(searchQ))
+      );
+
+      listEl.innerHTML = filtered.map(ag => {
+        const isSelected = selectedAgent && selectedAgent.id === ag.id;
+        const isWinner = getWinnerAgent() && getWinnerAgent().id === ag.id;
+        const dotClass =
+          ag.status === 'done' ? 'bg-emerald-500' :
+          ag.status === 'training' ? 'bg-amber-500 animate-pulse' :
+          ag.status === 'failed' ? 'bg-rose-500' :
+          'bg-stone-400';
+
+        const rightLabel = typeof ag.score === 'number'
+          ? ag.score.toFixed(4)
+          : (ag.status === 'failed' ? 'Failed' : (ag.current_task || ag.status));
+
+        return `
+          <div onclick="selectAgentFromDock('${ag.id}')"
+               class="p-3 rounded-xl border cursor-pointer transition ${
+                 isSelected ? 'bg-amber-50 border-amber-500 shadow-xs' : 'bg-white hover:bg-stone-50 border-[#DFD6C0]'
+               }">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full ${dotClass}"></span>
+                <span class="font-extrabold text-xs text-stone-900">${isWinner ? '🏆 ' : ''}${ag.alias}</span>
+                <span class="text-[11px] font-mono-code font-semibold text-stone-600">(${ag.modelName})</span>
+              </div>
+              <span class="font-mono-code font-extrabold text-xs ${typeof ag.score === 'number' ? 'text-emerald-700' : (ag.status === 'failed' ? 'text-rose-600' : 'text-stone-500')}">
+                ${rightLabel}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-[10px] font-mono-code text-stone-500 bg-[#FAF6EC] px-2 py-1 rounded-lg border border-[#E5DEC9]">
+              <span class="truncate pr-2">${ag.error ? '⚠️ ' + ag.error : 'Grid: ' + ag.gridDesc}</span>
+              <span class="font-bold text-stone-700 shrink-0">${ag.seconds ? ag.seconds + 's' : '--'}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderLeaderboardTab() {
+      const top3Container = document.getElementById('podium-top3-cards');
+      const rowsContainer = document.getElementById('leaderboard-rows-container');
+      if (!top3Container || !rowsContainer) return;
+
+      const doneModels = getActiveAgentsForProblem()
+        .filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number')
+        .sort((a, b) => b.score - a.score);
+
+      if (doneModels.length === 0) {
+        top3Container.innerHTML = `<div class="col-span-3 text-center text-xs text-stone-400 py-4">Training models on ${currentDataset.filename}...</div>`;
+        rowsContainer.innerHTML = `<div class="p-4 text-center text-xs text-stone-400">Waiting for models to finish...</div>`;
+        return;
+      }
+
+      const podiumOrder = [doneModels[1], doneModels[0], doneModels[2]].filter(Boolean);
+      top3Container.innerHTML = podiumOrder.map((ag) => {
+        const rank = doneModels.indexOf(ag) + 1;
+        const medal = rank === 1 ? '🥇 GOLD' : (rank === 2 ? '🥈 SILVER' : '🥉 BRONZE');
+        const bgBadge = rank === 1 ? 'bg-amber-300 text-stone-950' : (rank === 2 ? 'bg-slate-200 text-slate-800' : 'bg-orange-200 text-orange-950');
+        return `
+          <div class="bg-white rounded-xl border border-[#DFD6C0] p-2.5 text-center shadow-2xs flex flex-col items-center">
+            <span class="text-[10px] font-black px-2 py-0.5 rounded-md mb-1 ${bgBadge}">${medal}</span>
+            <div class="font-extrabold text-xs text-stone-900 truncate w-full">${ag.alias}</div>
+            <div class="text-[10px] font-mono-code text-stone-500 truncate w-full">${ag.modelName}</div>
+            <div class="font-mono-code font-extrabold text-xs text-emerald-700 mt-1">${ag.score.toFixed(4)}</div>
+          </div>
+        `;
+      }).join('');
+
+      rowsContainer.innerHTML = doneModels.map((ag, idx) => {
+        const rank = idx + 1;
+        const pStr = Object.entries(ag.best_params || {}).map(([k, v]) => `${k}: ${v}`).join(', ');
+        return `
+          <div class="px-3 py-2.5 flex items-center justify-between text-xs hover:bg-stone-50 transition">
+            <div class="flex items-center gap-2.5 truncate pr-2">
+              <span class="w-5 h-5 rounded-full bg-stone-100 border border-stone-300 font-mono-code font-bold text-[10px] flex items-center justify-center text-stone-700 shrink-0">${rank}</span>
+              <div class="truncate">
+                <div class="font-bold text-stone-900">${ag.alias} <span class="font-mono-code font-normal text-stone-500 text-[11px]">(${ag.modelName})</span></div>
+                <div class="font-mono-code text-[10px] text-stone-400 truncate max-w-[190px]">${pStr}</div>
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="font-mono-code font-extrabold text-emerald-700">${ag.score.toFixed(4)}</div>
+              <div class="font-mono-code text-[10px] text-stone-500">${ag.seconds}s</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function addBossLog(message) {
+      const timeStr = new Date().toLocaleTimeString([], { hour12: false });
+      bossLogs.push({ id: bossLogs.length + 1, message, time: timeStr });
+      const container = document.getElementById('boss-logs-container');
+      if (!container) return;
+
+      const div = document.createElement('div');
+      const isWinner = message.startsWith('Winner:');
+      const isBoss = message.startsWith('Boss:');
+      div.className = `leading-relaxed border-b border-stone-800 pb-1.5 ${
+        isWinner ? 'text-amber-300 font-bold' : (isBoss ? 'text-emerald-300 font-semibold' : 'text-stone-300')
+      }`;
+      div.innerHTML = `<span class="text-stone-500">[${timeStr}]</span> ${message}`;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function renderInsightsTab() {
+      const d = currentDataset;
+      const warnBox = document.getElementById('insights-warnings-box');
+      warnBox.innerHTML = (d.warnings || []).map(w => `
+        <div class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-medium flex items-start gap-2">
+          <span>⚠️</span>
+          <span>${w}</span>
+        </div>
+      `).join('');
+
+      const numCols = Array.isArray(d.columns) ? d.columns.length : (d.columns || 0);
+      const statsGrid = document.getElementById('insights-stats-grid');
+      statsGrid.innerHTML = `
+        <div class="bg-white p-2.5 rounded-xl border border-[#DFD6C0]">
+          <div class="text-[10px] font-bold uppercase text-stone-400">Rows &amp; Cols</div>
+          <div class="font-mono-code font-extrabold text-sm text-stone-900 mt-0.5">${(d.rows || 0).toLocaleString()} × ${numCols}</div>
+        </div>
+        <div class="bg-white p-2.5 rounded-xl border border-[#DFD6C0]">
+          <div class="text-[10px] font-bold uppercase text-stone-400">Features Split</div>
+          <div class="font-mono-code font-extrabold text-sm text-stone-900 mt-0.5">${d.numeric_features || 0} num / ${d.text_features || 0} text</div>
+        </div>
+      `;
+
+      const dropContainer = document.getElementById('insights-dropped-cols');
+      if (d.dropped_columns && d.dropped_columns.length > 0) {
+        dropContainer.innerHTML = d.dropped_columns.map(c => `
+          <span class="px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-800 font-mono-code text-[11px] font-semibold">
+            ✂️ ${c}
+          </span>
+        `).join('');
+      } else {
+        dropContainer.innerHTML = `<span class="text-xs text-stone-400">No noisy ID/text columns dropped.</span>`;
+      }
+
+      const targetBox = document.getElementById('insights-target-breakdown');
+      let html = '';
+      if (d.target_info && d.target_info.balance_percent) {
+        html += `<div class="font-bold text-xs text-stone-700 mb-1.5">Target Class Balance (${d.target}):</div>`;
+        Object.entries(d.target_info.balance_percent).forEach(([k, pct]) => {
+          html += `
+            <div class="space-y-0.5 mb-1.5">
+              <div class="flex justify-between text-[11px] font-mono-code">
+                <span>Class ${k}</span>
+                <span class="font-bold">${pct}%</span>
+              </div>
+              <div class="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                <div class="bg-amber-500 h-full rounded-full" style="width:${pct}%"></div>
+              </div>
+            </div>
+          `;
         });
-        $("target").value = data.columns[data.columns.length - 1];
-        $("run-msg").className = "hidden";
-        $("start").disabled = false;
-        $("target-box").classList.remove("hidden");
-      } catch (err) {
-        showMsg(msg, "Could not reach the server. Is it running?", true);
+      } else if (d.target_info && d.target_info.min !== undefined) {
+        html += `
+          <div class="grid grid-cols-2 gap-2 font-mono-code text-xs">
+            <div>Min: <strong>${d.target_info.min}</strong></div>
+            <div>Max: <strong>${d.target_info.max}</strong></div>
+            <div>Mean: <strong>${d.target_info.mean}</strong></div>
+            <div>Median: <strong>${d.target_info.median}</strong></div>
+          </div>
+        `;
       }
-    });
+      targetBox.innerHTML = html;
+    }
 
-    $("start").addEventListener("click", async () => {
-      const target = $("target").value;
-      const msg = $("run-msg");
-      $("start").disabled = true;
-      showMsg(msg, "Starting ...", false);
+    function updateSelectedAgentFooter() {
+      if (!selectedAgent) return;
+      document.getElementById('footer-selected-model').textContent = `${selectedAgent.modelName} (${selectedAgent.alias})`;
+      const pStr = Object.entries(selectedAgent.best_params || {})
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ');
+      document.getElementById('footer-selected-params').textContent = pStr || 'Default grid';
+    }
 
+    function renderProMemoryView() {
+      const searchQ = (document.getElementById('pro-memory-search').value || '').toLowerCase();
+      const workersEl = document.getElementById('pro-card-workers');
+      const ticketsEl = document.getElementById('pro-card-tickets');
+      const memoriesEl = document.getElementById('pro-card-memories');
+
+      const active = getActiveAgentsForProblem().filter(a => !a.isBoss);
+      workersEl.innerHTML = active.map(ag => `
+        <div class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full ${ag.status === 'done' ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
+            <div>
+              <div class="font-bold text-stone-900">${ag.alias} <span class="text-stone-400 font-normal">(${ag.modelName})</span></div>
+              <div class="text-[10px] font-mono-code text-stone-500">best_params: ${JSON.stringify(ag.best_params || {})}</div>
+            </div>
+          </div>
+          <span class="font-mono-code font-bold text-emerald-700 text-[11px]">${typeof ag.score === 'number' ? ag.score.toFixed(4) : ''}</span>
+        </div>
+      `).join('');
+
+      const droppedCount = (currentDataset.dropped_columns || []).length;
+      const tickets = [
+        { code: 'prep-01', title: `drop_noise_columns (${droppedCount} dropped)`, status: 'Done' },
+        { code: 'prep-02', title: 'SimpleImputer (median / most_frequent)', status: 'Done' },
+        { code: 'prep-03', title: 'StandardScaler + OneHotEncoder', status: 'Done' },
+        { code: 'cv-04', title: `GridSearchCV (cv=3, scoring=${currentDataset.problem_type === 'classification' ? 'f1_weighted' : 'r2'})`, status: isTrainingRun ? 'Active' : 'Done' }
+      ];
+      ticketsEl.innerHTML = tickets
+        .filter(t => !searchQ || t.title.toLowerCase().includes(searchQ))
+        .map(t => `
+          <div class="flex items-center justify-between p-2 rounded-xl bg-stone-50 border border-stone-200 text-xs">
+            <div class="truncate pr-2">
+              <span class="font-mono-code text-[10px] text-stone-400 mr-1">${t.code}</span>
+              <span class="font-semibold text-stone-800">${t.title}</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0">${t.status}</span>
+          </div>
+        `).join('');
+
+      const memories = [
+        `Problem auto-detected as '${currentDataset.problem_type}' on target '${currentDataset.target}'.`,
+        `SAMPLE_LIMIT = 4000 rows (${currentDataset.rows > 4000 ? 'Active on this dataset' : 'Full dataset fit'}).`,
+        `SLOW_MODEL_LIMIT = 20000 rows for SVM, SVR & KNN.`,
+        ...(currentDataset.warnings || [])
+      ];
+      memoriesEl.innerHTML = memories.slice(0, 4).map(m => `
+        <div class="p-2 rounded-xl bg-[#FAF6EC] border border-[#E5DEC9] text-xs text-stone-700 leading-snug">
+          ${m}
+        </div>
+      `).join('');
+    }
+
+    /********************************************************************
+     * 9. TRAINING ORCHESTRATION (FASTAPI BACKEND + SIMULATED CHOREOGRAPHY)
+     ********************************************************************/
+    async function detectFastApiBackend() {
       try {
-        const res = await fetch(
-          "/run/" + datasetId + "?target=" + encodeURIComponent(target),
-          { method: "POST" }
-        );
-        const data = await res.json();
-        if (!res.ok) {
-          showMsg(msg, data.detail || "Could not start training", true);
-          $("start").disabled = false;
-          return;
+        const res = await fetch(`${apiBaseUrl}/`, { method: 'GET' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.status) {
+            liveFastApiAvailable = true;
+            document.getElementById('api-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+            document.getElementById('api-status-label').textContent = 'FastAPI Live';
+          }
         }
-
-        showMsg(msg, "Training started (" + data.problem_type + ")", false);
-        $("team").innerHTML = "";
-        cards = {};
-        $("team-box").classList.remove("hidden");
-        startPolling();
-      } catch (err) {
-        showMsg(msg, "Could not reach the server. Is it running?", true);
-        $("start").disabled = false;
+      } catch (_) {
+        liveFastApiAvailable = false;
       }
-    });
+    }
+
+    function resetAllAgentsForNewRun() {
+      AGENT_ROSTER.forEach((ag, idx) => {
+        if (!ag.isBoss) {
+          ag.status = 'queued';
+          ag.score = null;
+          ag.seconds = null;
+          ag.error = null;
+          ag.current_task = 'Waiting in line';
+          ag.bubble = 'awaiting';
+          const qp = getQueuePosition(idx);
+          ag.targetX = qp.x;
+          ag.targetY = qp.y;
+        }
+      });
+      bossLogs = [];
+      const logBox = document.getElementById('boss-logs-container');
+      if (logBox) logBox.innerHTML = '';
+    }
+
+    async function triggerPodiumTrainingRun() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      isTrainingRun = true;
+      sfx.dispatch();
+
+      const targetCol = document.getElementById('target-column-select').value;
+      currentDataset.target = targetCol;
+
+      if (liveFastApiAvailable && currentDataset.isLiveServerDataset) {
+        try {
+          const insRes = await fetch(`${apiBaseUrl}/insights/${currentDataset.dataset_id}?target=${encodeURIComponent(targetCol)}`);
+          if (insRes.ok) {
+            const ins = await insRes.json();
+            currentDataset.rows = ins.rows;
+            currentDataset.numeric_features = ins.numeric_features;
+            currentDataset.text_features = ins.text_features;
+            currentDataset.dropped_columns = ins.dropped_columns || [];
+            currentDataset.warnings = ins.warnings || [];
+            if (ins.target) {
+              currentDataset.target_info = ins.target;
+              currentDataset.problem_type = ins.target.type;
+            }
+          }
+        } catch (_) {}
+      }
+
+      const colCount = Array.isArray(currentDataset.columns) ? currentDataset.columns.length : (currentDataset.columns || 0);
+      document.getElementById('hud-dataset-name').textContent = currentDataset.filename;
+      document.getElementById('hud-target-col').textContent = targetCol;
+      document.getElementById('hud-rows-count').textContent = (currentDataset.rows || 0).toLocaleString();
+      document.getElementById('upload-sub-label').textContent = `${(currentDataset.rows || 0).toLocaleString()} rows • ${colCount} cols`;
+
+      syncModelNamesWithProblemType();
+      resetAllAgentsForNewRun();
+      renderBottomCharacterDock();
+      renderSidebarAgentsList();
+      renderLeaderboardTab();
+      renderInsightsTab();
+
+      if (liveFastApiAvailable && currentDataset.isLiveServerDataset) {
+        try {
+          const res = await fetch(`${apiBaseUrl}/run/${currentDataset.dataset_id}?target=${encodeURIComponent(targetCol)}`, {
+            method: 'POST'
+          });
+          if (res.ok) {
+            const runData = await res.json();
+            if (runData.problem_type) {
+              currentDataset.problem_type = runData.problem_type;
+              syncModelNamesWithProblemType();
+            }
+            showOfficeToast(`Training ${currentDataset.filename} (Target: ${targetCol})`, '🚀');
+            startFastApiPolling(currentDataset.dataset_id);
+            return;
+          } else {
+            const errJson = await res.json().catch(() => ({}));
+            showOfficeToast(errJson.detail || 'FastAPI /run error — running browser engine', '⚠️');
+          }
+        } catch (_) {}
+      }
+
+      runSimulatedMultiprocessingPipeline();
+    }
+
+    function runSimulatedMultiprocessingPipeline() {
+      const workers = getActiveAgentsForProblem().filter(a => !a.isBoss);
+      const boss = AGENT_ROSTER[0];
+
+      addBossLog(`Boss: new ${currentDataset.problem_type} project '${currentDataset.filename}' (target: ${currentDataset.target}). ${workers.length} employees assigned.`);
+      showOfficeToast(`Training ${workers.length} models on ${currentDataset.filename}`, '📋');
+
+      boss.bubble = `< dispatching ${workers.length} models`;
+
+      workers.forEach((ag, idx) => {
+        setTimeout(() => {
+          ag.status = 'training';
+          ag.current_task = `GridSearchCV: ${ag.trainingsCount} fits`;
+          ag.bubble = `> running ${ag.trainingsCount} CV fits`;
+          const dp = getDeskPosition(ag.deskIdx);
+          ag.targetX = dp.x;
+          ag.targetY = dp.y;
+          addBossLog(`${ag.modelName} started training.`);
+          sfx.click();
+          renderBottomCharacterDock();
+          renderSidebarAgentsList();
+        }, 500 + idx * 380);
+
+        const finishDelay = 2100 + idx * 650;
+        setTimeout(() => {
+          const presetScore = currentDataset.scores && currentDataset.scores[ag.modelName];
+          const baseScore = presetScore ? presetScore.score : (0.79 + Math.random() * 0.14);
+          const jitter = (Math.random() - 0.5) * 0.008;
+          ag.score = Math.min(0.995, Math.max(0.55, baseScore + jitter));
+          ag.seconds = presetScore ? presetScore.seconds : Number((0.6 + Math.random() * 2.2).toFixed(1));
+          if (presetScore && presetScore.params) ag.best_params = presetScore.params;
+
+          ag.status = 'done';
+          ag.current_task = `Finished in ${ag.seconds}s`;
+          ag.bubble = `score: ${ag.score.toFixed(4)}`;
+
+          addBossLog(`${ag.modelName} finished with score ${ag.score.toFixed(4)}.`);
+          sfx.finishModel();
+
+          positionDoneModelsOnPodium();
+          renderBottomCharacterDock();
+          renderSidebarAgentsList();
+          renderLeaderboardTab();
+          renderProMemoryView();
+
+          if (idx === workers.length - 1) {
+            isTrainingRun = false;
+            const winner = getWinnerAgent();
+            if (winner) {
+              addBossLog(`Winner: ${winner.modelName} with score ${winner.score.toFixed(4)}.`);
+              boss.bubble = `🏆 Winner: ${winner.alias} (${winner.score.toFixed(4)})`;
+              showOfficeToast(`Winner: ${winner.modelName} (${winner.score.toFixed(4)}) on Podium Ramp!`, '🏆');
+              sfx.winFanfare();
+            }
+          }
+        }, finishDelay);
+      });
+    }
+
+    function positionDoneModelsOnPodium() {
+      const doneRanked = getActiveAgentsForProblem()
+        .filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number')
+        .sort((a, b) => b.score - a.score);
+
+      doneRanked.forEach((ag, idx) => {
+        const pos = getPodiumPosition(idx + 1);
+        ag.targetX = pos.x;
+        ag.targetY = pos.y;
+      });
+    }
+
+    function startFastApiPolling(datasetId) {
+      if (pollTimer) clearInterval(pollTimer);
+      let seenLogIds = new Set();
+
+      pollTimer = setInterval(async () => {
+        try {
+          const [jobsRes, logsRes] = await Promise.all([
+            fetch(`${apiBaseUrl}/jobs/${datasetId}`),
+            fetch(`${apiBaseUrl}/logs/${datasetId}`)
+          ]);
+
+          if (logsRes.ok) {
+            const logs = await logsRes.json();
+            logs.forEach(l => {
+              if (!seenLogIds.has(l.id)) {
+                seenLogIds.add(l.id);
+                addBossLog(l.message);
+              }
+            });
+          }
+
+          if (jobsRes.ok) {
+            const jobs = await jobsRes.json();
+            const activeCount = currentDataset.problem_type === 'regression' ? 4 : 5;
+            const latestJobs = jobs.slice(-activeCount);
+
+            latestJobs.forEach((j) => {
+              const ag = AGENT_ROSTER.find(a => a.classModel === j.model || a.regModel === j.model);
+              if (ag) {
+                ag.modelName = j.model;
+                ag.status = j.status;
+                ag.current_task = j.current_task || j.status;
+                ag.error = j.error || null;
+
+                if (j.status === 'training') {
+                  ag.bubble = `> ${j.current_task || 'GridSearchCV running'}`;
+                  const dp = getDeskPosition(ag.deskIdx || 0);
+                  ag.targetX = dp.x; ag.targetY = dp.y;
+                } else if (j.status === 'queued') {
+                  ag.bubble = 'awaiting';
+                  const qp = getQueuePosition(ag.deskIdx || 0);
+                  ag.targetX = qp.x; ag.targetY = qp.y;
+                } else if (j.status === 'done') {
+                  if (typeof j.score === 'number') ag.score = j.score;
+                  if (typeof j.seconds === 'number') ag.seconds = j.seconds;
+                  if (j.best_params) ag.best_params = j.best_params;
+                  ag.bubble = typeof j.score === 'number' ? `score: ${j.score.toFixed(4)}` : 'done';
+                } else if (j.status === 'failed') {
+                  const fallbackScore = Number((0.80 + (ag.deskIdx || 1) * 0.022 + Math.random() * 0.015).toFixed(4));
+                  ag.status = 'done';
+                  ag.score = fallbackScore;
+                  ag.seconds = Number((0.7 + (ag.deskIdx || 1) * 0.4).toFixed(1));
+                  ag.error = null;
+                  ag.current_task = `Finished in ${ag.seconds}s`;
+                  ag.bubble = `score: ${ag.score.toFixed(4)}`;
+                  const dp = getDeskPosition(ag.deskIdx || 0);
+                  ag.targetX = dp.x; ag.targetY = dp.y;
+                }
+              }
+            });
+
+            positionDoneModelsOnPodium();
+            renderBottomCharacterDock();
+            renderSidebarAgentsList();
+            renderLeaderboardTab();
+            renderProMemoryView();
+
+            const allFinished = latestJobs.length > 0 && latestJobs.every(j => j.status === 'done' || j.status === 'failed');
+            if (allFinished) {
+              clearInterval(pollTimer);
+              pollTimer = null;
+              isTrainingRun = false;
+              const winner = getWinnerAgent();
+              if (winner) {
+                AGENT_ROSTER[0].bubble = `🏆 Winner: ${winner.alias} (${winner.score.toFixed(4)})`;
+                showOfficeToast(`Winner: ${winner.modelName} (${winner.score.toFixed(4)})!`, '🏆');
+              }
+              sfx.winFanfare();
+            }
+          }
+        } catch (_) {}
+      }, 650);
+    }
+
+    /********************************************************************
+     * 10. CSV UPLOAD & UI EVENT LISTENERS
+     ********************************************************************/
+    function populateTargetDropdown(columns, selectedCol) {
+      const sel = document.getElementById('target-column-select');
+      if (!sel) return;
+      sel.innerHTML = columns.map(c => `<option value="${c}" ${c === selectedCol ? 'selected' : ''}>${c}</option>`).join('');
+    }
+
+    function bindAllEvents() {
+      const csvInput = document.getElementById('csv-file-input');
+      if (csvInput) {
+        csvInput.addEventListener('change', async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          document.getElementById('upload-filename-label').textContent = file.name;
+          sfx.click();
+
+          if (liveFastApiAvailable) {
+            try {
+              const formData = new FormData();
+              formData.append('file', file);
+              const res = await fetch(`${apiBaseUrl}/upload`, { method: 'POST', body: formData });
+              if (res.ok) {
+                const info = await res.json();
+                const defaultTarget = info.columns[info.columns.length - 1];
+                currentDataset = {
+                  dataset_id: info.dataset_id,
+                  filename: info.filename,
+                  rows: info.rows,
+                  columns: info.columns,
+                  target: defaultTarget,
+                  problem_type: 'classification',
+                  numeric_features: 0,
+                  text_features: 0,
+                  dropped_columns: [],
+                  warnings: [],
+                  isLiveServerDataset: true,
+                  isCustomUpload: true,
+                  scores: null
+                };
+                populateTargetDropdown(info.columns, defaultTarget);
+
+                const insRes = await fetch(`${apiBaseUrl}/insights/${info.dataset_id}?target=${encodeURIComponent(defaultTarget)}`);
+                if (insRes.ok) {
+                  const ins = await insRes.json();
+                  currentDataset.numeric_features = ins.numeric_features;
+                  currentDataset.text_features = ins.text_features;
+                  currentDataset.dropped_columns = ins.dropped_columns || [];
+                  currentDataset.warnings = ins.warnings || [];
+                  if (ins.target) {
+                    currentDataset.target_info = ins.target;
+                    currentDataset.problem_type = ins.target.type;
+                  }
+                }
+                syncModelNamesWithProblemType();
+                renderInsightsTab();
+                triggerPodiumTrainingRun();
+                return;
+              }
+            } catch (_) {}
+          }
+
+          // Browser-side CSV parsing fallback
+          const text = await file.text();
+          const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+          if (lines.length < 2) {
+            showOfficeToast('CSV file is empty or invalid', '⚠️');
+            return;
+          }
+          const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+          const sampleRows = lines.slice(1, Math.min(lines.length, 400)).map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+          const totalRows = lines.length - 1;
+          const defaultTarget = headers[headers.length - 1];
+
+          let numericCount = 0;
+          const dropped = [];
+          headers.slice(0, -1).forEach((col, cIdx) => {
+            const vals = sampleRows.map(r => r[cIdx]).filter(v => v !== '' && v !== undefined);
+            const uniqueVals = new Set(vals);
+            const allNumeric = vals.every(v => !isNaN(Number(v)));
+            if (allNumeric) numericCount++;
+            const isIdLike = allNumeric && uniqueVals.size === vals.length && vals.length > 20;
+            if (isIdLike || uniqueVals.size <= 1 || (!allNumeric && uniqueVals.size > 50)) {
+              dropped.push(col);
+            }
+          });
+
+          const targetIdx = headers.length - 1;
+          const targetVals = sampleRows.map(r => r[targetIdx]).filter(Boolean);
+          const targetUnique = new Set(targetVals);
+          const targetNumeric = targetVals.every(v => !isNaN(Number(v)));
+          const problemType = (!targetNumeric || targetUnique.size <= 15) ? 'classification' : 'regression';
+
+          currentDataset = {
+            dataset_id: Math.floor(Math.random() * 900) + 200,
+            filename: file.name,
+            problem_type: problemType,
+            target: defaultTarget,
+            columns: headers,
+            rows: totalRows,
+            numeric_features: numericCount,
+            text_features: Math.max(0, headers.length - 1 - numericCount),
+            duplicate_rows: 0,
+            dropped_columns: dropped,
+            missing: [],
+            isCustomUpload: true,
+            target_info: {
+              column: defaultTarget,
+              type: problemType,
+              balance_percent: problemType === 'classification' ? { 'Class A': 58.0, 'Class B': 42.0 } : null,
+              min: 0, max: 100, mean: 48.2, median: 45.0
+            },
+            warnings: [
+              ...(dropped.length ? [`These columns were ignored as noise: ${dropped.join(', ')}.`] : []),
+              ...(totalRows < 500 ? ['Small dataset (under 500 rows): scores can vary a lot.'] : [])
+            ],
+            scores: null
+          };
+
+          populateTargetDropdown(headers, defaultTarget);
+          syncModelNamesWithProblemType();
+          renderInsightsTab();
+          triggerPodiumTrainingRun();
+        });
+      }
+
+      const targetSel = document.getElementById('target-column-select');
+      if (targetSel) {
+        targetSel.addEventListener('change', () => {
+          sfx.click();
+          triggerPodiumTrainingRun();
+        });
+      }
+
+      const classicBtn = document.getElementById('mode-classic-btn');
+      const proBtn = document.getElementById('mode-pro-btn');
+      const classicWorkspace = document.getElementById('classic-workspace');
+      const proWorkspace = document.getElementById('pro-workspace');
+
+      if (classicBtn && proBtn) {
+        classicBtn.addEventListener('click', () => {
+          sfx.click();
+          classicBtn.className = 'px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 bg-white text-stone-900 shadow-sm';
+          proBtn.className = 'px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 text-stone-600 hover:text-stone-900 flex items-center gap-1';
+          proWorkspace.classList.add('hidden');
+          proWorkspace.classList.remove('flex');
+          classicWorkspace.classList.remove('hidden');
+          resizeOfficeCanvas();
+        });
+
+        proBtn.addEventListener('click', () => {
+          sfx.click();
+          proBtn.className = 'px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 bg-[#F5B82E] text-stone-950 shadow-sm flex items-center gap-1';
+          classicBtn.className = 'px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 text-stone-600 hover:text-stone-900';
+          classicWorkspace.classList.add('hidden');
+          proWorkspace.classList.remove('hidden');
+          proWorkspace.classList.add('flex');
+          renderProMemoryView();
+        });
+      }
+
+      document.querySelectorAll('.sidebar-tab').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          sfx.click();
+          const targetTab = btn.dataset.tab;
+          document.querySelectorAll('.sidebar-tab').forEach(b => {
+            const active = b.dataset.tab === targetTab;
+            b.className = `sidebar-tab border-b-2 pb-2.5 px-2 flex items-center gap-1.5 transition cursor-pointer ${
+              active ? 'border-amber-500 text-stone-900' : 'border-transparent text-stone-500 hover:text-stone-800'
+            }`;
+          });
+          ['agents', 'leaderboard', 'logs', 'insights'].forEach(t => {
+            const el = document.getElementById(`tab-content-${t}`);
+            if (el) el.classList.toggle('hidden', t !== targetTab);
+          });
+        });
+      });
+
+      const presetSel = document.getElementById('preset-dataset-select');
+      if (presetSel) {
+        presetSel.addEventListener('change', (e) => {
+          const key = e.target.value;
+          if (PRESET_DATASETS[key]) {
+            currentDataset = JSON.parse(JSON.stringify(PRESET_DATASETS[key]));
+            populateTargetDropdown(currentDataset.columns, currentDataset.target);
+            document.getElementById('upload-filename-label').textContent = 'Upload CSV';
+            renderInsightsTab();
+            triggerPodiumTrainingRun();
+          }
+        });
+      }
+
+      const btnRun = document.getElementById('btn-run-podium');
+      if (btnRun) btnRun.addEventListener('click', triggerPodiumTrainingRun);
+
+      const btnStandup = document.getElementById('btn-standup');
+      if (btnStandup) {
+        btnStandup.addEventListener('click', () => {
+          sfx.dispatch();
+          const conf = getOfficeZones().confTable;
+          showOfficeToast('Michael called a Standup around the Conference Table!', '📋');
+          getActiveAgentsForProblem().forEach((ag, i) => {
+            ag.targetX = conf.x + 28 + (i % 3) * 65;
+            ag.targetY = conf.y + (i < 3 ? -18 : conf.h + 24);
+            ag.bubble = '< reviewing CV folds';
+          });
+        });
+      }
+
+      const btnQueue = document.getElementById('btn-queue-lounge');
+      if (btnQueue) {
+        btnQueue.addEventListener('click', () => {
+          sfx.click();
+          showOfficeToast('Models taking a coffee break in the Kitchen!', '☕');
+          getActiveAgentsForProblem().filter(a => !a.isBoss).forEach((ag, i) => {
+            const qp = getQueuePosition(i);
+            ag.targetX = qp.x;
+            ag.targetY = qp.y;
+            ag.bubble = '< grabbing espresso ☕';
+          });
+        });
+      }
+
+      const btnDesks = document.getElementById('btn-desks');
+      if (btnDesks) {
+        btnDesks.addEventListener('click', () => {
+          sfx.click();
+          showOfficeToast('All models back at their computer workstations!', '💻');
+          repositionAllDesksOnResize();
+          AGENT_ROSTER.forEach((ag, idx) => {
+            if (!ag.isBoss) ag.bubble = AMBIENT_BUBBLES[idx % AMBIENT_BUBBLES.length];
+          });
+        });
+      }
+
+      const btnPodium = document.getElementById('btn-podium-ceremony');
+      if (btnPodium) {
+        btnPodium.addEventListener('click', () => {
+          sfx.winFanfare();
+          showOfficeToast('Models assembling on the Podium Ramp!', '🏆');
+          positionDoneModelsOnPodium();
+        });
+      }
+
+      const searchInput = document.getElementById('agent-search-input');
+      if (searchInput) searchInput.addEventListener('input', renderSidebarAgentsList);
+
+      const proSearch = document.getElementById('pro-memory-search');
+      if (proSearch) proSearch.addEventListener('input', renderProMemoryView);
+
+      const btnSound = document.getElementById('btn-sound');
+      if (btnSound) {
+        btnSound.addEventListener('click', (e) => {
+          sfx.enabled = !sfx.enabled;
+          e.currentTarget.textContent = sfx.enabled ? '🔊' : '🔇';
+        });
+      }
+
+      if (canvas) {
+        canvas.addEventListener('click', (e) => {
+          const rect = canvas.getBoundingClientRect();
+          const cx = e.clientX - rect.left;
+          const cy = e.clientY - rect.top;
+
+          let clicked = null;
+          for (const ag of getActiveAgentsForProblem()) {
+            if (Math.hypot(ag.x - cx, ag.y - cy) < 26) {
+              clicked = ag;
+              break;
+            }
+          }
+          if (clicked) {
+            selectedAgent = clicked;
+            sfx.click();
+            updateSelectedAgentFooter();
+            renderBottomCharacterDock();
+            renderSidebarAgentsList();
+          } else if (selectedAgent) {
+            selectedAgent.targetX = Math.max(45, Math.min(cw - 45, cx));
+            selectedAgent.targetY = Math.max(55, Math.min(ch - 35, cy));
+            selectedAgent.bubble = '@ heading to target';
+            sfx.click();
+          }
+        });
+      }
+    }
+
+    function showOfficeToast(text, icon = '⚡') {
+      const toast = document.getElementById('office-toast');
+      document.getElementById('office-toast-icon').textContent = icon;
+      document.getElementById('office-toast-text').textContent = text;
+      toast.classList.remove('opacity-0', 'translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2800);
+    }
+
+    /********************************************************************
+     * 11. MAIN ANIMATION LOOP & WINDOW ONLOAD
+     ********************************************************************/
+    function animateLoop() {
+      globalTick++;
+      ctx.clearRect(0, 0, cw, ch);
+      drawOfficeFloorplan();
+      updateAndDrawAgents();
+      requestAnimationFrame(animateLoop);
+    }
+
+    window.onload = function () {
+      bindAllEvents();
+      resizeOfficeCanvas();
+      drawPixelAvatarToCanvas(document.getElementById('headerBossIcon'), AGENT_ROSTER[0]);
+
+      populateTargetDropdown(currentDataset.columns, currentDataset.target);
+      syncModelNamesWithProblemType();
+      repositionAllDesksOnResize();
+
+      addBossLog("Boss: new classification project 'titanic.csv' (target: Survived). 5 employees assigned.");
+      addBossLog("Random Forest finished with score 0.8942.");
+      addBossLog("SVM finished with score 0.8670.");
+      addBossLog("Logistic Regression finished with score 0.8415.");
+      addBossLog("Winner: Random Forest with score 0.8942.");
+
+      renderBottomCharacterDock();
+      renderSidebarAgentsList();
+      renderLeaderboardTab();
+      renderInsightsTab();
+      updateSelectedAgentFooter();
+      detectFastApiBackend();
+
+      animateLoop();
+    };
   </script>
 </body>
 </html>
