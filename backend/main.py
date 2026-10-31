@@ -1,8 +1,10 @@
 import os
 from datetime import datetime
+from pathlib import Path
 from ml.train import (prepare_data, get_models, worker,
                       drop_noise_columns, detect_problem_type)
 import pandas as pd
+from fastapi.staticfiles import StaticFiles
 from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
@@ -388,3 +390,7 @@ def get_insights(dataset_id: int, target: str | None = None,
             "These columns were ignored as noise: " + ", ".join(dropped) + ".")
 
     return result
+
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+app.mount("/app", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

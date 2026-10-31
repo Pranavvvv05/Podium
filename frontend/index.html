@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Podium</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-stone-100 text-stone-800 min-h-screen">
+
+  <header class="bg-blue-900 text-white">
+    <div class="max-w-3xl mx-auto px-4 py-5">
+      <h1 class="text-2xl font-bold">Podium</h1>
+      <p class="text-blue-200 text-sm">Upload a CSV. Our employees (models) compete. The best one wins.</p>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Step 1: upload -->
+    <section class="bg-white rounded-xl shadow p-6">
+      <h2 class="font-semibold text-lg mb-3">1. Upload your data</h2>
+      <label id="drop"
+             class="flex flex-col items-center justify-center border-2 border-dashed border-stone-300 rounded-lg p-8 cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+        <span class="text-stone-600">Click to choose a .csv file</span>
+        <span class="text-xs text-stone-400 mt-1">Up to 50 MB</span>
+        <input id="file" type="file" accept=".csv" class="hidden">
+      </label>
+      <p id="upload-msg" class="text-sm mt-3 hidden"></p>
+    </section>
+
+    <!-- Step 2: choose target -->
+    <section id="target-box" class="bg-white rounded-xl shadow p-6 hidden">
+      <h2 class="font-semibold text-lg mb-1">2. What should the models predict?</h2>
+      <p id="file-info" class="text-sm text-stone-500 mb-4"></p>
+      <label class="block text-sm font-medium mb-1" for="target">Target column</label>
+      <select id="target" class="w-full border border-stone-300 rounded-lg px-3 py-2 mb-4"></select>
+      <button id="start"
+              class="bg-blue-900 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed">
+        Start training
+      </button>
+      <p id="run-msg" class="text-sm mt-3 hidden"></p>
+    </section>
+
+    <!-- Step 3: employee cards -->
+    <section id="team-box" class="bg-white rounded-xl shadow p-6 hidden">
+      <h2 class="font-semibold text-lg mb-3">3. Your team</h2>
+      <div id="team" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+    </section>
+
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let datasetId = null;
+    let cards = {};      // job_id -> card element
+    let jobs = [];       // latest data from /jobs
+    let pollTimer = null;
+
+    const BADGE = {
+      queued:   "bg-stone-200 text-stone-700",
+      training: "bg-amber-100 text-amber-800",
+      done:     "bg-green-100 text-green-800",
+      failed:   "bg-red-100 text-red-800",
+    };
+
+    // Server sends UTC time without a "Z"; add it so the browser reads it as UTC
+    function parseUtc(text) {
+      if (!text) return null;
+      return new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(text) ? text : text + "Z");
+    }
+
+    function formatTime(seconds) {
+      const s = Math.max(0, Math.floor(seconds));
+      return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    }
+
+    function renderJobs() {
+      jobs.forEach((job) => {
+        let card = cards[job.job_id];
+        if (!card) {
+          card = document.createElement("div");
+          card.className = "border border-stone-200 rounded-lg p-4";
+          card.innerHTML =
+            '<div class="flex justify-between items-start">' +
+              '<span class="font-semibold name"></span>' +
+              '<span class="text-xs px-2 py-1 rounded-full badge"></span>' +
+            '</div>' +
+            '<p class="text-sm text-stone-600 mt-2 task"></p>' +
+            '<p class="text-sm font-medium mt-2 extra"></p>';
+          $("team").appendChild(card);
+          cards[job.job_id] = card;
+        }
+        card.querySelector(".name").textContent = job.model;
+        const badge = card.querySelector(".badge");
+        badge.textContent = job.status;
+        badge.className = "text-xs px-2 py-1 rounded-full badge " + (BADGE[job.status] || BADGE.queued);
+        card.querySelector(".task").textContent =
+          job.status === "failed" && job.error ? job.error : (job.current_task || "");
+        card.dataset.status = job.status;
+        card.dataset.started = job.started_at || "";
+        card.dataset.score = job.score == null ? "" : job.score;
+      });
+      tickTimers();
+    }
+
+    // Runs every second: live timer for training cards, score for done cards
+    function tickTimers() {
+      Object.values(cards).forEach((card) => {
+        const extra = card.querySelector(".extra");
+        if (card.dataset.status === "training" && card.dataset.started) {
+          const started = parseUtc(card.dataset.started);
+          extra.textContent = "Working: " + formatTime((Date.now() - started) / 1000);
+        } else if (card.dataset.status === "done" && card.dataset.score !== "") {
+          extra.textContent = "Score: " + Number(card.dataset.score).toFixed(4);
+        } else {
+          extra.textContent = "";
+        }
+      });
+    }
+
+    async function poll() {
+      try {
+        const res = await fetch("/jobs/" + datasetId);
+        if (!res.ok) return;
+        jobs = await res.json();
+        renderJobs();
+        const finished = jobs.length > 0 &&
+          jobs.every((j) => j.status === "done" || j.status === "failed");
+        if (finished) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          $("start").disabled = false;
+        }
+      } catch (err) {
+        // server hiccup: try again on the next tick
+      }
+    }
+
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      poll();
+      pollTimer = setInterval(poll, 2000);
+    }
+
+    setInterval(tickTimers, 1000);
+
+    function showMsg(el, text, isError) {
+      el.textContent = text;
+      el.className = "text-sm mt-3 " + (isError ? "text-red-600" : "text-green-700");
+    }
+
+    $("file").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const msg = $("upload-msg");
+      showMsg(msg, "Uploading " + file.name + " ...", false);
+      $("target-box").classList.add("hidden");
+      $("team-box").classList.add("hidden");
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+
+      const form = new FormData();
+      form.append("file", file);
+
+      try {
+        const res = await fetch("/upload", { method: "POST", body: form });
+        const data = await res.json();
+        if (!res.ok) {
+          showMsg(msg, data.detail || "Upload failed", true);
+          return;
+        }
+
+        datasetId = data.dataset_id;
+        showMsg(msg, "Uploaded: " + data.filename, false);
+
+        $("file-info").textContent = data.rows + " rows, " + data.columns.length + " columns";
+        $("target").innerHTML = "";
+        data.columns.forEach((col) => {
+          const opt = document.createElement("option");
+          opt.value = col;
+          opt.textContent = col;
+          $("target").appendChild(opt);
+        });
+        $("target").value = data.columns[data.columns.length - 1];
+        $("run-msg").className = "hidden";
+        $("start").disabled = false;
+        $("target-box").classList.remove("hidden");
+      } catch (err) {
+        showMsg(msg, "Could not reach the server. Is it running?", true);
+      }
+    });
+
+    $("start").addEventListener("click", async () => {
+      const target = $("target").value;
+      const msg = $("run-msg");
+      $("start").disabled = true;
+      showMsg(msg, "Starting ...", false);
+
+      try {
+        const res = await fetch(
+          "/run/" + datasetId + "?target=" + encodeURIComponent(target),
+          { method: "POST" }
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          showMsg(msg, data.detail || "Could not start training", true);
+          $("start").disabled = false;
+          return;
+        }
+
+        showMsg(msg, "Training started (" + data.problem_type + ")", false);
+        $("team").innerHTML = "";
+        cards = {};
+        $("team-box").classList.remove("hidden");
+        startPolling();
+      } catch (err) {
+        showMsg(msg, "Could not reach the server. Is it running?", true);
+        $("start").disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
