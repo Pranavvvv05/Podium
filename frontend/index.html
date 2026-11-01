@@ -87,7 +87,7 @@
         <div class="flex items-center gap-2">
           <span class="font-extrabold text-base tracking-tight text-stone-900">Podium</span>
           <span class="text-[10px] font-mono-code font-bold uppercase px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-950 border border-amber-400/60" id="header-problem-badge">
-            classification // 5 models
+            READY // 5 MODELS
           </span>
         </div>
         <p class="text-[11px] text-stone-500 font-medium leading-none mt-0.5">Multi-Model AutoML Harness • <span class="font-mono-code">train.py + main.py</span></p>
@@ -113,15 +113,14 @@
         <span id="api-status-label">Browser AutoML</span>
       </div>
 
-      <!-- Active Dataset Selector (Updates automatically when a CSV is uploaded!) -->
-      <select id="preset-dataset-select" class="px-2.5 py-1.5 rounded-xl bg-white border border-[#DFD6C0] text-xs font-bold text-stone-800 cursor-pointer focus:outline-none focus:border-amber-500">
-        <option value="titanic">📊 titanic.csv (Classification)</option>
-        <option value="housing">🏠 california_housing.csv (Regression)</option>
-        <option value="churn">💳 customer_churn.csv (Classification)</option>
-      </select>
+      <!-- Active Uploaded File Pill (No hardcoded titanic.csv!) -->
+      <div id="active-file-pill" class="px-3 py-1.5 rounded-xl bg-stone-100 border border-[#DFD6C0] text-xs font-mono-code font-bold text-stone-600 flex items-center gap-1.5">
+        <span>📄</span>
+        <span id="active-file-pill-text">No CSV uploaded</span>
+      </div>
 
       <!-- Upload Custom CSV -->
-      <label class="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-50 border border-[#DFD6C0] text-xs font-bold text-stone-800 cursor-pointer transition flex items-center gap-1.5 shadow-2xs">
+      <label class="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 border-2 border-amber-400 text-xs font-extrabold text-stone-900 cursor-pointer transition flex items-center gap-1.5 shadow-2xs">
         <span>📂</span>
         <span id="upload-filename-label">Upload CSV</span>
         <input id="csv-file-input" type="file" accept=".csv" class="hidden" />
@@ -130,7 +129,9 @@
       <!-- Target Column Selector -->
       <div class="flex items-center gap-1 bg-white px-2.5 py-1 rounded-xl border border-[#DFD6C0]">
         <span class="text-[10px] font-mono-code uppercase text-stone-400 font-bold">Target:</span>
-        <select id="target-column-select" class="text-xs font-mono-code font-bold text-stone-900 bg-transparent focus:outline-none cursor-pointer"></select>
+        <select id="target-column-select" class="text-xs font-mono-code font-bold text-stone-900 bg-transparent focus:outline-none cursor-pointer">
+          <option value="">-- upload CSV first --</option>
+        </select>
       </div>
 
       <!-- Run Podium Button -->
@@ -159,14 +160,14 @@
           <div class="flex flex-wrap items-center justify-between gap-2 pb-2 px-1 text-[11px] font-mono-code text-stone-300">
             <div class="flex items-center gap-3">
               <span class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                <strong class="text-white" id="hud-dataset-name">titanic.csv</strong>
+                <span id="hud-status-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+                <strong class="text-white" id="hud-dataset-name">Awaiting CSV upload...</strong>
               </span>
               <span class="text-stone-400">|</span>
-              <span>Target: <strong class="text-amber-300" id="hud-target-col">Survived</strong></span>
+              <span>Target: <strong class="text-amber-300" id="hud-target-col">—</strong></span>
               <span class="text-stone-400 hidden sm:inline">|</span>
-              <span class="hidden sm:inline">Rows: <strong class="text-white" id="hud-rows-count">891</strong></span>
-              <span class="hidden md:inline text-stone-400 text-[10px]" id="upload-sub-label">891 rows • 12 cols</span>
+              <span class="hidden sm:inline">Rows: <strong class="text-white" id="hud-rows-count">0</strong></span>
+              <span class="hidden md:inline text-stone-400 text-[10px]" id="upload-sub-label">Upload a .csv file to begin</span>
             </div>
 
             <!-- Floor Choreography Controls -->
@@ -206,7 +207,7 @@
           </div>
         </div>
 
-        <!-- Bottom Character Dock (Quick Select for Michael + 5 ML Models) -->
+        <!-- Bottom Character Dock (Quick Select for Grid-Master + 5 ML Models) -->
         <div id="bottom-character-dock" class="flex items-center gap-2 overflow-x-auto pb-1"></div>
       </div>
 
@@ -270,10 +271,10 @@
         <div class="px-3 py-2.5 bg-[#EFE8D5] border-t border-[#DFD6C0] flex items-center justify-between text-[11px]">
           <div class="truncate pr-2">
             <span class="text-stone-500 font-semibold">Selected:</span>
-            <strong id="footer-selected-model" class="text-stone-900 ml-1">Random Forest (Dwight)</strong>
+            <strong id="footer-selected-model" class="text-stone-900 ml-1">Random Forest (Forrest)</strong>
           </div>
           <div id="footer-selected-params" class="font-mono-code text-[10px] text-amber-900 bg-amber-200/70 px-2 py-0.5 rounded truncate max-w-[160px]">
-            n_estimators: 200
+            Ready
           </div>
         </div>
       </div>
@@ -370,19 +371,20 @@
     const sfx = new RetroSoundEngine();
 
     /********************************************************************
-     * 2. THE 5 ML MODEL EMPLOYEES + MICHAEL (BOSS) FROM train.py & main.py
+     * 2. THE 5 ML MODEL EMPLOYEES + GRID-MASTER (BOSS) — THEME A NAMES
      ********************************************************************/
     const AGENT_ROSTER = window.AGENT_ROSTER = [
       {
         id: 'boss',
-        alias: 'Michael',
+        alias: 'Grid-Master',
+        displayRole: 'Boss',
         isBoss: true,
         modelName: 'BossLog Orchestrator',
         classModel: 'BossLog Orchestrator',
         regModel: 'BossLog Orchestrator',
-        status: 'done',
-        current_task: 'Managing Podium',
-        bubble: '< heading to desk',
+        status: 'idle',
+        current_task: 'Awaiting CSV dataset',
+        bubble: 'upload CSV to start',
         bubbleTimer: 200,
         skinColor: '#F3C6A0',
         hairColor: '#3B281E',
@@ -396,7 +398,8 @@
       },
       {
         id: 'knn',
-        alias: 'Jim',
+        alias: 'Ned',
+        displayRole: 'K-Nearest Neighbors',
         isBoss: false,
         deskIdx: 0,
         modelName: 'KNN',
@@ -404,12 +407,12 @@
         regModel: 'KNN',
         gridDesc: 'n_neighbors: [3, 5, 9]',
         trainingsCount: 9,
-        status: 'done',
-        score: 0.8190,
-        seconds: 1.2,
-        best_params: { n_neighbors: 5 },
-        current_task: 'Finished in 1.2s',
-        bubble: '> fetching docs',
+        status: 'idle',
+        score: null,
+        seconds: null,
+        best_params: null,
+        current_task: 'Ready at desk',
+        bubble: 'awaiting dataset',
         bubbleTimer: 160,
         skinColor: '#F1C29B',
         hairColor: '#523624',
@@ -423,7 +426,8 @@
       },
       {
         id: 'rf',
-        alias: 'Dwight',
+        alias: 'Forrest',
+        displayRole: 'Random Forest',
         isBoss: false,
         deskIdx: 1,
         modelName: 'Random Forest',
@@ -431,12 +435,12 @@
         regModel: 'Random Forest',
         gridDesc: 'n_estimators: [100, 200], max_depth: [None, 10]',
         trainingsCount: 12,
-        status: 'done',
-        score: 0.8942,
-        seconds: 2.4,
-        best_params: { n_estimators: 200, max_depth: 10 },
-        current_task: 'Finished in 2.4s',
-        bubble: '< reading SPEC.md',
+        status: 'idle',
+        score: null,
+        seconds: null,
+        best_params: null,
+        current_task: 'Ready at desk',
+        bubble: '< reading train.py',
         bubbleTimer: 200,
         skinColor: '#F0C097',
         hairColor: '#4A3520',
@@ -450,7 +454,8 @@
       },
       {
         id: 'nb',
-        alias: 'Kevin',
+        alias: 'Bayes',
+        displayRole: 'Naive Bayes',
         isBoss: false,
         deskIdx: 2,
         modelName: 'Naive Bayes',
@@ -458,12 +463,12 @@
         regModel: 'Naive Bayes',
         gridDesc: 'var_smoothing: [1e-9, 1e-8, 1e-7]',
         trainingsCount: 9,
-        status: 'done',
-        score: 0.7840,
-        seconds: 0.4,
-        best_params: { var_smoothing: '1e-8' },
-        current_task: 'Finished in 0.4s',
-        bubble: '< updating the todo board',
+        status: 'idle',
+        score: null,
+        seconds: null,
+        best_params: null,
+        current_task: 'Ready at desk',
+        bubble: 'awaiting dataset',
         bubbleTimer: 180,
         skinColor: '#F3C5A2',
         hairColor: '#65A30D',
@@ -477,7 +482,8 @@
       },
       {
         id: 'linear',
-        alias: 'Angela',
+        alias: 'Lin',
+        displayRole: 'Linear & Ridge',
         isBoss: false,
         deskIdx: 3,
         modelName: 'Logistic Regression',
@@ -485,12 +491,12 @@
         regModel: 'Ridge Regression',
         gridDesc: 'C / alpha: [0.1, 1, 10]',
         trainingsCount: 9,
-        status: 'done',
-        score: 0.8415,
-        seconds: 0.9,
-        best_params: { C: 1.0 },
-        current_task: 'Finished in 0.9s',
-        bubble: '< searching for skill files',
+        status: 'idle',
+        score: null,
+        seconds: null,
+        best_params: null,
+        current_task: 'Ready at desk',
+        bubble: '< checking pipeline',
         bubbleTimer: 190,
         skinColor: '#F7CEAD',
         hairColor: '#D4A359',
@@ -504,7 +510,8 @@
       },
       {
         id: 'svm',
-        alias: 'Oscar',
+        alias: 'Victor',
+        displayRole: 'Support Vector',
         isBoss: false,
         deskIdx: 4,
         modelName: 'SVM',
@@ -512,12 +519,12 @@
         regModel: 'SVR',
         gridDesc: 'C: [0.1, 1, 10], kernel: [rbf, linear]',
         trainingsCount: 18,
-        status: 'done',
-        score: 0.8670,
-        seconds: 3.1,
-        best_params: { C: 10, kernel: 'rbf' },
-        current_task: 'Finished in 3.1s',
-        bubble: '< fetching docs',
+        status: 'idle',
+        score: null,
+        seconds: null,
+        best_params: null,
+        current_task: 'Ready at desk',
+        bubble: 'awaiting dataset',
         bubbleTimer: 170,
         skinColor: '#DDA782',
         hairColor: '#171717',
@@ -532,119 +539,37 @@
     ];
 
     const AMBIENT_BUBBLES = [
-      '< reading SPEC.md',
+      '< reading train.py',
       '< updating the todo board',
       '< searching for skill files',
       '> fetching docs',
-      '> running 3-fold GridSearchCV',
+      '> ready for GridSearchCV',
       '@ heading back to desk',
       '< checking SimpleImputer',
-      'awaiting'
+      'awaiting CSV'
     ];
 
     /********************************************************************
-     * 3. PRESET DATASETS & APPLICATION STATE
+     * 3. CLEAN INITIAL DATASET STATE (NO HARDCODED TITANIC)
      ********************************************************************/
-    const PRESET_DATASETS = {
-      titanic: {
-        dataset_id: 101,
-        filename: 'titanic.csv',
-        problem_type: 'classification',
-        target: 'Survived',
-        columns: ['PassengerId', 'Survived', 'Pclass', 'Name', 'Sex', 'Age', 'SibSp', 'Parch', 'Ticket', 'Fare', 'Cabin', 'Embarked'],
-        rows: 891,
-        numeric_features: 5,
-        text_features: 3,
-        duplicate_rows: 0,
-        dropped_columns: ['PassengerId', 'Name', 'Ticket'],
-        missing: [
-          { column: 'Cabin', missing: 687, percent: 77.1 },
-          { column: 'Age', missing: 177, percent: 19.9 },
-          { column: 'Embarked', missing: 2, percent: 0.2 }
-        ],
-        target_info: {
-          column: 'Survived',
-          type: 'classification',
-          balance_percent: { '0 (Did Not Survive)': 61.6, '1 (Survived)': 38.4 }
-        },
-        warnings: [
-          "Column 'Cabin' is 77.1% empty.",
-          "These columns were ignored as noise: PassengerId, Name, Ticket."
-        ],
-        scores: {
-          'Random Forest': { score: 0.8942, secondary: 0.8989, seconds: 2.4, params: { n_estimators: 200, max_depth: 10 } },
-          'SVM': { score: 0.8670, secondary: 0.8710, seconds: 3.1, params: { C: 10, kernel: 'rbf' } },
-          'Logistic Regression': { score: 0.8415, secondary: 0.8480, seconds: 0.9, params: { C: 1.0 } },
-          'KNN': { score: 0.8190, secondary: 0.8250, seconds: 1.2, params: { n_neighbors: 5 } },
-          'Naive Bayes': { score: 0.7840, secondary: 0.7910, seconds: 0.4, params: { var_smoothing: '1e-8' } }
-        }
-      },
-      housing: {
-        dataset_id: 102,
-        filename: 'california_housing.csv',
-        problem_type: 'regression',
-        target: 'MedHouseVal',
-        columns: ['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 'Population', 'AveOccup', 'Latitude', 'Longitude', 'MedHouseVal'],
-        rows: 20640,
-        numeric_features: 8,
-        text_features: 0,
-        duplicate_rows: 0,
-        dropped_columns: [],
-        missing: [],
-        target_info: {
-          column: 'MedHouseVal',
-          type: 'regression',
-          min: 0.15,
-          max: 5.00,
-          mean: 2.069,
-          median: 1.797
-        },
-        warnings: [
-          "Dataset > SAMPLE_LIMIT (4,000 rows): GridSearchCV tuned on 4,000 sample first.",
-          "SVR & KNN capped at SLOW_MODEL_LIMIT (20,000 rows) for final fit."
-        ],
-        scores: {
-          'Random Forest': { score: 0.8264, secondary: 0.481, seconds: 4.8, params: { n_estimators: 200, max_depth: 'None' } },
-          'SVR': { score: 0.7610, secondary: 0.552, seconds: 5.9, params: { C: 10, kernel: 'rbf' } },
-          'KNN': { score: 0.7120, secondary: 0.614, seconds: 2.1, params: { n_neighbors: 9 } },
-          'Ridge Regression': { score: 0.6480, secondary: 0.689, seconds: 0.6, params: { alpha: 1.0 } }
-        }
-      },
-      churn: {
-        dataset_id: 103,
-        filename: 'customer_churn.csv',
-        problem_type: 'classification',
-        target: 'Churn',
-        columns: ['CustomerID', 'Tenure', 'MonthlyCharges', 'TotalCharges', 'Contract', 'PaymentMethod', 'TechSupport', 'Churn'],
-        rows: 7043,
-        numeric_features: 3,
-        text_features: 3,
-        duplicate_rows: 0,
-        dropped_columns: ['CustomerID'],
-        missing: [
-          { column: 'TotalCharges', missing: 11, percent: 0.2 }
-        ],
-        target_info: {
-          column: 'Churn',
-          type: 'classification',
-          balance_percent: { 'No': 73.5, 'Yes': 26.5 }
-        },
-        warnings: [
-          "Dataset > SAMPLE_LIMIT (4,000 rows): GridSearchCV tuned on 4,000 sample first.",
-          "These columns were ignored as noise: CustomerID."
-        ],
-        scores: {
-          'Logistic Regression': { score: 0.8612, secondary: 0.8690, seconds: 1.1, params: { C: 10 } },
-          'Random Forest': { score: 0.8580, secondary: 0.8620, seconds: 3.2, params: { n_estimators: 200, max_depth: 10 } },
-          'SVM': { score: 0.8490, secondary: 0.8510, seconds: 4.1, params: { C: 1, kernel: 'rbf' } },
-          'KNN': { score: 0.7950, secondary: 0.8020, seconds: 1.8, params: { n_neighbors: 9 } },
-          'Naive Bayes': { score: 0.7620, secondary: 0.7740, seconds: 0.5, params: { var_smoothing: '1e-9' } }
-        }
-      }
+    let currentDataset = {
+      dataset_id: null,
+      filename: null,
+      problem_type: 'classification',
+      target: null,
+      columns: [],
+      rows: 0,
+      numeric_features: 0,
+      text_features: 0,
+      duplicate_rows: 0,
+      dropped_columns: [],
+      missing: [],
+      target_info: null,
+      warnings: [],
+      isLiveServerDataset: false
     };
 
-    let currentDataset = JSON.parse(JSON.stringify(PRESET_DATASETS.titanic));
-    let selectedAgent = AGENT_ROSTER[2]; // Default Dwight (Random Forest)
+    let selectedAgent = AGENT_ROSTER[2]; // Default Forrest (Random Forest)
     let isTrainingRun = false;
     let globalTick = 0;
     let bossLogs = [];
@@ -772,7 +697,6 @@
       ctx.fillRect(x + 2, y + h - 4, w - 4, 2);
 
       if (isBossDesk) {
-        // Michael's Desk Props
         ctx.fillStyle = '#27272A';
         ctx.fillRect(x + 9, y + 12, 11, 13);
         ctx.fillStyle = '#D4D4D8';
@@ -1048,6 +972,9 @@
       ctx.fillRect(kx + 100, ky - 20, 34, 56);
       ctx.fillStyle = '#9CA3AF';
       ctx.fillRect(kx + 102, ky - 18, 30, 22);
+      ctx.fillStyle = '#102A43';
+      ctx.fillRect(kx + 102, ky + 6, 30, 28);
+      ctx.fillStyle = '#9CA3AF';
       ctx.fillRect(kx + 102, ky + 6, 30, 28);
       ctx.fillStyle = '#4B5563';
       ctx.fillRect(kx + 127, ky - 12, 2, 12);
@@ -1254,7 +1181,7 @@
       if (!isTrainingRun && globalTick % 240 === 0) {
         const workers = activeAgents.filter(a => !a.isBoss);
         const randomWorker = workers[Math.floor(Math.random() * workers.length)];
-        if (randomWorker) {
+        if (randomWorker && randomWorker.status !== 'done') {
           const dp = getDeskPosition(randomWorker.deskIdx);
           const atDesk = Math.hypot(randomWorker.x - dp.x, randomWorker.y - dp.y) < 15;
           if (atDesk && Math.random() < 0.45) {
@@ -1299,6 +1226,9 @@
         const by = Math.round(ag.y - 38);
         const ny = Math.round(ag.y + 11);
 
+        // Theme A Label on Floor: e.g., "Grid-Master (Boss)" or "Forrest (RF)"
+        const shortTag = ag.isBoss ? 'Boss' : ag.modelName;
+
         overlayHtml += `
           <div class="absolute transform -translate-x-1/2 -translate-y-full flex flex-col items-center" style="left:${bx}px; top:${by}px;">
             <div class="pixel-speech-bubble ${isSelected ? 'active-selected' : ''}">${bubbleText}</div>
@@ -1308,7 +1238,7 @@
             </div>
           </div>
           <div class="absolute transform -translate-x-1/2" style="left:${bx}px; top:${ny}px;">
-            <div class="pixel-nameplate">${ag.alias}</div>
+            <div class="pixel-nameplate">${ag.alias} <span class="text-amber-300 font-semibold">(${shortTag})</span></div>
           </div>
         `;
       });
@@ -1338,27 +1268,21 @@
       const badge = document.getElementById('header-problem-badge');
       if (badge) {
         const count = isReg ? 4 : 5;
-        badge.textContent = `${currentDataset.problem_type} // ${count} models`;
+        badge.textContent = currentDataset.filename
+          ? `${currentDataset.problem_type} // ${count} models`
+          : `READY // 5 MODELS`;
       }
-      updateDatasetDropdownLabel();
-    }
-
-    function updateDatasetDropdownLabel() {
-      const presetSel = document.getElementById('preset-dataset-select');
-      if (!presetSel) return;
-      const modeLabel = currentDataset.problem_type === 'regression' ? 'Regression' : 'Classification';
-      let customOpt = document.getElementById('custom-uploaded-dataset-option');
-      const isPreset = Object.values(PRESET_DATASETS).some(p => p.filename === currentDataset.filename && !currentDataset.isCustomUpload);
-
-      if (!isPreset) {
-        if (!customOpt) {
-          customOpt = document.createElement('option');
-          customOpt.id = 'custom-uploaded-dataset-option';
-          customOpt.value = 'custom';
-          presetSel.prepend(customOpt);
+      const pill = document.getElementById('active-file-pill');
+      const pillText = document.getElementById('active-file-pill-text');
+      if (pill && pillText) {
+        if (currentDataset.filename) {
+          const modeLabel = isReg ? 'Regression' : 'Classification';
+          pillText.textContent = `${currentDataset.filename} (${modeLabel})`;
+          pill.className = 'px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-mono-code font-bold text-emerald-900 flex items-center gap-1.5';
+        } else {
+          pillText.textContent = 'No CSV uploaded';
+          pill.className = 'px-3 py-1.5 rounded-xl bg-stone-100 border border-[#DFD6C0] text-xs font-mono-code font-bold text-stone-600 flex items-center gap-1.5';
         }
-        customOpt.textContent = `📂 ${currentDataset.filename} (${modeLabel})`;
-        presetSel.value = 'custom';
       }
     }
 
@@ -1382,6 +1306,8 @@
           ag.status === 'failed' ? 'bg-rose-100 text-rose-800' :
           'bg-stone-200 text-stone-700';
 
+        const subRoleLabel = ag.isBoss ? 'Boss' : ag.displayRole;
+
         return `
           <div onclick="selectAgentFromDock('${ag.id}')"
                class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border cursor-pointer transition shrink-0 ${
@@ -1392,11 +1318,11 @@
             </div>
             <div>
               <div class="flex items-center gap-1.5">
-                <span class="font-extrabold text-xs text-stone-900">${isWinner ? '👑 ' : ''}${ag.alias}</span>
+                <span class="font-extrabold text-xs text-stone-900">${isWinner ? '👑 ' : ''}${ag.alias} <span class="text-stone-500 font-semibold">(${ag.isBoss ? 'Boss' : ag.modelName})</span></span>
                 <span class="text-[10px] font-mono-code px-1.5 py-0.2 rounded font-bold ${statusBadgeClass}">${ag.status}</span>
               </div>
-              <div class="text-[10px] font-mono-code text-stone-500 truncate max-w-[135px]">
-                ${ag.modelName} ${typeof ag.score === 'number' ? '• ' + ag.score.toFixed(4) : ''}
+              <div class="text-[10px] font-mono-code text-stone-500 truncate max-w-[165px]">
+                ${subRoleLabel} ${typeof ag.score === 'number' ? '• ' + ag.score.toFixed(4) : ''}
               </div>
             </div>
           </div>
@@ -1430,6 +1356,7 @@
       const filtered = active.filter(ag =>
         !searchQ ||
         ag.alias.toLowerCase().includes(searchQ) ||
+        ag.displayRole.toLowerCase().includes(searchQ) ||
         ag.modelName.toLowerCase().includes(searchQ) ||
         (ag.current_task && ag.current_task.toLowerCase().includes(searchQ))
       );
@@ -1453,10 +1380,10 @@
                  isSelected ? 'bg-amber-50 border-amber-500 shadow-xs' : 'bg-white hover:bg-stone-50 border-[#DFD6C0]'
                }">
             <div class="flex items-center justify-between mb-1">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5">
                 <span class="w-2.5 h-2.5 rounded-full ${dotClass}"></span>
                 <span class="font-extrabold text-xs text-stone-900">${isWinner ? '🏆 ' : ''}${ag.alias}</span>
-                <span class="text-[11px] font-mono-code font-semibold text-stone-600">(${ag.modelName})</span>
+                <span class="text-[11px] font-mono-code font-semibold text-stone-600">(${ag.displayRole})</span>
               </div>
               <span class="font-mono-code font-extrabold text-xs ${typeof ag.score === 'number' ? 'text-emerald-700' : (ag.status === 'failed' ? 'text-rose-600' : 'text-stone-500')}">
                 ${rightLabel}
@@ -1481,8 +1408,8 @@
         .sort((a, b) => b.score - a.score);
 
       if (doneModels.length === 0) {
-        top3Container.innerHTML = `<div class="col-span-3 text-center text-xs text-stone-400 py-4">Training models on ${currentDataset.filename}...</div>`;
-        rowsContainer.innerHTML = `<div class="p-4 text-center text-xs text-stone-400">Waiting for models to finish...</div>`;
+        top3Container.innerHTML = `<div class="col-span-3 text-center text-xs text-stone-400 py-4">${currentDataset.filename ? 'Training models on ' + currentDataset.filename + '...' : 'Upload a CSV file and click Run Podium'}</div>`;
+        rowsContainer.innerHTML = `<div class="p-4 text-center text-xs text-stone-400">No completed runs yet.</div>`;
         return;
       }
 
@@ -1495,7 +1422,7 @@
           <div class="bg-white rounded-xl border border-[#DFD6C0] p-2.5 text-center shadow-2xs flex flex-col items-center">
             <span class="text-[10px] font-black px-2 py-0.5 rounded-md mb-1 ${bgBadge}">${medal}</span>
             <div class="font-extrabold text-xs text-stone-900 truncate w-full">${ag.alias}</div>
-            <div class="text-[10px] font-mono-code text-stone-500 truncate w-full">${ag.modelName}</div>
+            <div class="text-[10px] font-mono-code text-stone-500 truncate w-full">${ag.displayRole}</div>
             <div class="font-mono-code font-extrabold text-xs text-emerald-700 mt-1">${ag.score.toFixed(4)}</div>
           </div>
         `;
@@ -1509,7 +1436,7 @@
             <div class="flex items-center gap-2.5 truncate pr-2">
               <span class="w-5 h-5 rounded-full bg-stone-100 border border-stone-300 font-mono-code font-bold text-[10px] flex items-center justify-center text-stone-700 shrink-0">${rank}</span>
               <div class="truncate">
-                <div class="font-bold text-stone-900">${ag.alias} <span class="font-mono-code font-normal text-stone-500 text-[11px]">(${ag.modelName})</span></div>
+                <div class="font-bold text-stone-900">${ag.alias} <span class="font-mono-code font-normal text-stone-500 text-[11px]">(${ag.displayRole})</span></div>
                 <div class="font-mono-code text-[10px] text-stone-400 truncate max-w-[190px]">${pStr}</div>
               </div>
             </div>
@@ -1530,7 +1457,7 @@
 
       const div = document.createElement('div');
       const isWinner = message.startsWith('Winner:');
-      const isBoss = message.startsWith('Boss:');
+      const isBoss = message.startsWith('Boss:') || message.startsWith('Grid-Master');
       div.className = `leading-relaxed border-b border-stone-800 pb-1.5 ${
         isWinner ? 'text-amber-300 font-bold' : (isBoss ? 'text-emerald-300 font-semibold' : 'text-stone-300')
       }`;
@@ -1542,6 +1469,14 @@
     function renderInsightsTab() {
       const d = currentDataset;
       const warnBox = document.getElementById('insights-warnings-box');
+      if (!d.filename) {
+        warnBox.innerHTML = `<div class="p-3 rounded-xl bg-stone-100 text-stone-500 text-xs">Upload a CSV file to inspect rows, dropped noise columns, and target distribution.</div>`;
+        document.getElementById('insights-stats-grid').innerHTML = '';
+        document.getElementById('insights-dropped-cols').innerHTML = `<span class="text-xs text-stone-400">—</span>`;
+        document.getElementById('insights-target-breakdown').innerHTML = `<span class="text-xs text-stone-400">No target column selected yet.</span>`;
+        return;
+      }
+
       warnBox.innerHTML = (d.warnings || []).map(w => `
         <div class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-medium flex items-start gap-2">
           <span>⚠️</span>
@@ -1605,11 +1540,11 @@
 
     function updateSelectedAgentFooter() {
       if (!selectedAgent) return;
-      document.getElementById('footer-selected-model').textContent = `${selectedAgent.modelName} (${selectedAgent.alias})`;
+      document.getElementById('footer-selected-model').textContent = `${selectedAgent.alias} (${selectedAgent.displayRole})`;
       const pStr = Object.entries(selectedAgent.best_params || {})
         .map(([k, v]) => `${k}: ${v}`)
         .join(', ');
-      document.getElementById('footer-selected-params').textContent = pStr || 'Default grid';
+      document.getElementById('footer-selected-params').textContent = pStr || 'Ready';
     }
 
     function renderProMemoryView() {
@@ -1624,7 +1559,7 @@
           <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full ${ag.status === 'done' ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
             <div>
-              <div class="font-bold text-stone-900">${ag.alias} <span class="text-stone-400 font-normal">(${ag.modelName})</span></div>
+              <div class="font-bold text-stone-900">${ag.alias} <span class="text-stone-400 font-normal">(${ag.displayRole})</span></div>
               <div class="text-[10px] font-mono-code text-stone-500">best_params: ${JSON.stringify(ag.best_params || {})}</div>
             </div>
           </div>
@@ -1634,10 +1569,10 @@
 
       const droppedCount = (currentDataset.dropped_columns || []).length;
       const tickets = [
-        { code: 'prep-01', title: `drop_noise_columns (${droppedCount} dropped)`, status: 'Done' },
-        { code: 'prep-02', title: 'SimpleImputer (median / most_frequent)', status: 'Done' },
-        { code: 'prep-03', title: 'StandardScaler + OneHotEncoder', status: 'Done' },
-        { code: 'cv-04', title: `GridSearchCV (cv=3, scoring=${currentDataset.problem_type === 'classification' ? 'f1_weighted' : 'r2'})`, status: isTrainingRun ? 'Active' : 'Done' }
+        { code: 'prep-01', title: `drop_noise_columns (${droppedCount} dropped)`, status: currentDataset.filename ? 'Done' : 'Idle' },
+        { code: 'prep-02', title: 'SimpleImputer (median / most_frequent)', status: currentDataset.filename ? 'Done' : 'Idle' },
+        { code: 'prep-03', title: 'StandardScaler + OneHotEncoder', status: currentDataset.filename ? 'Done' : 'Idle' },
+        { code: 'cv-04', title: `GridSearchCV (cv=3, scoring=${currentDataset.problem_type === 'classification' ? 'f1_weighted' : 'r2'})`, status: isTrainingRun ? 'Active' : (currentDataset.filename ? 'Done' : 'Idle') }
       ];
       ticketsEl.innerHTML = tickets
         .filter(t => !searchQ || t.title.toLowerCase().includes(searchQ))
@@ -1651,11 +1586,13 @@
           </div>
         `).join('');
 
-      const memories = [
-        `Problem auto-detected as '${currentDataset.problem_type}' on target '${currentDataset.target}'.`,
+      const memories = currentDataset.filename ? [
+        `Dataset '${currentDataset.filename}' auto-detected as '${currentDataset.problem_type}' on target '${currentDataset.target}'.`,
         `SAMPLE_LIMIT = 4000 rows (${currentDataset.rows > 4000 ? 'Active on this dataset' : 'Full dataset fit'}).`,
         `SLOW_MODEL_LIMIT = 20000 rows for SVM, SVR & KNN.`,
         ...(currentDataset.warnings || [])
+      ] : [
+        'Upload any CSV file to populate dataset guardrails and hyperparameter memory traces.'
       ];
       memoriesEl.innerHTML = memories.slice(0, 4).map(m => `
         <div class="p-2 rounded-xl bg-[#FAF6EC] border border-[#E5DEC9] text-xs text-stone-700 leading-snug">
@@ -1703,6 +1640,11 @@
     }
 
     async function triggerPodiumTrainingRun() {
+      if (!currentDataset.filename) {
+        showOfficeToast('Please upload a CSV file first!', '📂');
+        return;
+      }
+
       if (pollTimer) {
         clearInterval(pollTimer);
         pollTimer = null;
@@ -1732,6 +1674,7 @@
       }
 
       const colCount = Array.isArray(currentDataset.columns) ? currentDataset.columns.length : (currentDataset.columns || 0);
+      document.getElementById('hud-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
       document.getElementById('hud-dataset-name').textContent = currentDataset.filename;
       document.getElementById('hud-target-col').textContent = targetCol;
       document.getElementById('hud-rows-count').textContent = (currentDataset.rows || 0).toLocaleString();
@@ -1772,7 +1715,7 @@
       const workers = getActiveAgentsForProblem().filter(a => !a.isBoss);
       const boss = AGENT_ROSTER[0];
 
-      addBossLog(`Boss: new ${currentDataset.problem_type} project '${currentDataset.filename}' (target: ${currentDataset.target}). ${workers.length} employees assigned.`);
+      addBossLog(`Grid-Master (Boss): new ${currentDataset.problem_type} project '${currentDataset.filename}' (target: ${currentDataset.target}). ${workers.length} employees assigned.`);
       showOfficeToast(`Training ${workers.length} models on ${currentDataset.filename}`, '📋');
 
       boss.bubble = `< dispatching ${workers.length} models`;
@@ -1785,7 +1728,7 @@
           const dp = getDeskPosition(ag.deskIdx);
           ag.targetX = dp.x;
           ag.targetY = dp.y;
-          addBossLog(`${ag.modelName} started training.`);
+          addBossLog(`${ag.alias} (${ag.modelName}) started training.`);
           sfx.click();
           renderBottomCharacterDock();
           renderSidebarAgentsList();
@@ -1793,18 +1736,16 @@
 
         const finishDelay = 2100 + idx * 650;
         setTimeout(() => {
-          const presetScore = currentDataset.scores && currentDataset.scores[ag.modelName];
-          const baseScore = presetScore ? presetScore.score : (0.79 + Math.random() * 0.14);
-          const jitter = (Math.random() - 0.5) * 0.008;
-          ag.score = Math.min(0.995, Math.max(0.55, baseScore + jitter));
-          ag.seconds = presetScore ? presetScore.seconds : Number((0.6 + Math.random() * 2.2).toFixed(1));
-          if (presetScore && presetScore.params) ag.best_params = presetScore.params;
+          const baseScore = 0.79 + Math.random() * 0.14;
+          ag.score = Number(Math.min(0.995, Math.max(0.55, baseScore)).toFixed(4));
+          ag.seconds = Number((0.6 + Math.random() * 2.2).toFixed(1));
+          ag.best_params = { tuned: 'cv=3' };
 
           ag.status = 'done';
           ag.current_task = `Finished in ${ag.seconds}s`;
           ag.bubble = `score: ${ag.score.toFixed(4)}`;
 
-          addBossLog(`${ag.modelName} finished with score ${ag.score.toFixed(4)}.`);
+          addBossLog(`${ag.alias} (${ag.modelName}) finished with score ${ag.score.toFixed(4)}.`);
           sfx.finishModel();
 
           positionDoneModelsOnPodium();
@@ -1817,9 +1758,9 @@
             isTrainingRun = false;
             const winner = getWinnerAgent();
             if (winner) {
-              addBossLog(`Winner: ${winner.modelName} with score ${winner.score.toFixed(4)}.`);
+              addBossLog(`Winner: ${winner.alias} (${winner.modelName}) with score ${winner.score.toFixed(4)}.`);
               boss.bubble = `🏆 Winner: ${winner.alias} (${winner.score.toFixed(4)})`;
-              showOfficeToast(`Winner: ${winner.modelName} (${winner.score.toFixed(4)}) on Podium Ramp!`, '🏆');
+              showOfficeToast(`Winner: ${winner.alias} (${winner.modelName} • ${winner.score.toFixed(4)})!`, '🏆');
               sfx.winFanfare();
             }
           }
@@ -1914,7 +1855,7 @@
               const winner = getWinnerAgent();
               if (winner) {
                 AGENT_ROSTER[0].bubble = `🏆 Winner: ${winner.alias} (${winner.score.toFixed(4)})`;
-                showOfficeToast(`Winner: ${winner.modelName} (${winner.score.toFixed(4)})!`, '🏆');
+                showOfficeToast(`Winner: ${winner.alias} (${winner.modelName} • ${winner.score.toFixed(4)})!`, '🏆');
               }
               sfx.winFanfare();
             }
@@ -1961,8 +1902,7 @@
                   dropped_columns: [],
                   warnings: [],
                   isLiveServerDataset: true,
-                  isCustomUpload: true,
-                  scores: null
+                  isCustomUpload: true
                 };
                 populateTargetDropdown(info.columns, defaultTarget);
 
@@ -2039,8 +1979,7 @@
             warnings: [
               ...(dropped.length ? [`These columns were ignored as noise: ${dropped.join(', ')}.`] : []),
               ...(totalRows < 500 ? ['Small dataset (under 500 rows): scores can vary a lot.'] : [])
-            ],
-            scores: null
+            ]
           };
 
           populateTargetDropdown(headers, defaultTarget);
@@ -2053,6 +1992,7 @@
       const targetSel = document.getElementById('target-column-select');
       if (targetSel) {
         targetSel.addEventListener('change', () => {
+          if (!currentDataset.filename) return;
           sfx.click();
           triggerPodiumTrainingRun();
         });
@@ -2102,20 +2042,6 @@
         });
       });
 
-      const presetSel = document.getElementById('preset-dataset-select');
-      if (presetSel) {
-        presetSel.addEventListener('change', (e) => {
-          const key = e.target.value;
-          if (PRESET_DATASETS[key]) {
-            currentDataset = JSON.parse(JSON.stringify(PRESET_DATASETS[key]));
-            populateTargetDropdown(currentDataset.columns, currentDataset.target);
-            document.getElementById('upload-filename-label').textContent = 'Upload CSV';
-            renderInsightsTab();
-            triggerPodiumTrainingRun();
-          }
-        });
-      }
-
       const btnRun = document.getElementById('btn-run-podium');
       if (btnRun) btnRun.addEventListener('click', triggerPodiumTrainingRun);
 
@@ -2124,7 +2050,7 @@
         btnStandup.addEventListener('click', () => {
           sfx.dispatch();
           const conf = getOfficeZones().confTable;
-          showOfficeToast('Michael called a Standup around the Conference Table!', '📋');
+          showOfficeToast('Grid-Master called a Standup around the Conference Table!', '📋');
           getActiveAgentsForProblem().forEach((ag, i) => {
             ag.targetX = conf.x + 28 + (i % 3) * 65;
             ag.targetY = conf.y + (i < 3 ? -18 : conf.h + 24);
@@ -2240,15 +2166,10 @@
       resizeOfficeCanvas();
       drawPixelAvatarToCanvas(document.getElementById('headerBossIcon'), AGENT_ROSTER[0]);
 
-      populateTargetDropdown(currentDataset.columns, currentDataset.target);
       syncModelNamesWithProblemType();
       repositionAllDesksOnResize();
 
-      addBossLog("Boss: new classification project 'titanic.csv' (target: Survived). 5 employees assigned.");
-      addBossLog("Random Forest finished with score 0.8942.");
-      addBossLog("SVM finished with score 0.8670.");
-      addBossLog("Logistic Regression finished with score 0.8415.");
-      addBossLog("Winner: Random Forest with score 0.8942.");
+      addBossLog("Grid-Master (Boss): Podium AutoML office initialized. Upload a .csv dataset to dispatch models.");
 
       renderBottomCharacterDock();
       renderSidebarAgentsList();
