@@ -169,7 +169,7 @@ def run_jobs(dataset_id: int):
                 job.seconds = payload["seconds"]
                 job.current_task = f"Finished in {payload['seconds']}s"
                 if best["score"] is None or payload["score"] > best["score"]:
-                    best.update(score=payload["score"], model=payload["model"], job=job)
+                    best.update(score=payload["score"], model=payload["fitted"], job=job)
                 msg = f"{job.model_name} finished with score {payload['score']:.4f}."
             else:
                 job.status = "failed"

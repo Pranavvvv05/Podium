@@ -235,8 +235,10 @@ def train_one(name: str, data: dict, n_jobs: int = -1) -> dict:
     metrics = evaluate(problem_type, data["y_test"], final_model.predict(data["X_test"]))
 
     main_metric = "f1" if problem_type == "classification" else "r2"
+    fitted = final_model.best_estimator_ if hasattr(final_model, "best_estimator_") else final_model
     return {
         "model": name,
+        "fitted": fitted,
         "score": float(metrics[main_metric]),
         "metrics": {k: float(v) for k, v in metrics.items()},
         "best_params": {k.replace("model__", ""): _clean(v) for k, v in search.best_params_.items()},
