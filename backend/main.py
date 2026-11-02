@@ -394,3 +394,21 @@ def get_insights(dataset_id: int, target: str | None = None,
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 app.mount("/app", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
+from fastapi.responses import FileResponse
+
+@app.get("/download/{dataset_id}")
+def download_winner_model(dataset_id: int, db: Session = Depends(get_db)):
+    winner = (
+        db.query(models.Job)
+        .filter_by(dataset_id=dataset_id, status="done")
+        .order_by(models.Job.score.desc())
+        .first()
+    )
+    if not winner or not winner.model_path or not os.path.exists(winner.model_path):
+        raise HTTPException(status_code=404, detail="Saved .joblib model not found on server")
+    return FileResponse(
+        path=winner.model_path,
+        filename=os.path.basename(winner.model_path),
+        media_type="application/octet-stream"
+    )
