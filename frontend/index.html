@@ -39,7 +39,6 @@
       background: #D5CBB8;
       border-radius: 9999px;
     }
-    /* Crisp pixel speech bubble styling */
     .pixel-speech-bubble {
       background: #FFFFFF;
       color: #18181B;
@@ -59,6 +58,11 @@
       background: #FFFBEB;
       box-shadow: 0 2px 0 rgba(217, 119, 6, 0.35);
     }
+    .pixel-speech-bubble.bubble-failed {
+      border-color: #DC2626;
+      background: #FEF2F2;
+      color: #991B1B;
+    }
     .pixel-nameplate {
       background: rgba(24, 24, 27, 0.88);
       color: #FAFAFA;
@@ -76,7 +80,7 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-[#FAF6EC]">
 
-  <!-- TOP NAVIGATION BAR (Munder Difflin / Podium Header) -->
+  <!-- TOP NAVIGATION BAR -->
   <header class="w-full max-w-[1440px] mx-auto px-4 pt-3 pb-2 flex flex-wrap items-center justify-between gap-3">
     <!-- Brand Logo & Name -->
     <div class="flex items-center gap-2.5">
@@ -94,26 +98,15 @@
       </div>
     </div>
 
-    <!-- Classic | PRO Toggle Switch -->
-    <div class="flex items-center bg-[#EAE3D2] p-1 rounded-full border border-[#D8CEB8] shadow-inner">
-      <button id="mode-classic-btn" class="px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 bg-white text-stone-900 shadow-sm">
-        Classic Office
-      </button>
-      <button id="mode-pro-btn" class="px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 text-stone-600 hover:text-stone-900 flex items-center gap-1">
-        <span>PRO</span>
-        <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-400/90 text-stone-950 font-extrabold">MEMORY</span>
-      </button>
-    </div>
-
     <!-- Dataset Controls, Target Picker & Run Podium Button -->
     <div class="flex flex-wrap items-center gap-2">
       <!-- Connection Badge -->
       <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-[#DFD6C0] text-[11px] font-mono-code text-stone-600">
-        <span id="api-status-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
-        <span id="api-status-label">Browser AutoML</span>
+        <span id="api-status-dot" class="w-2 h-2 rounded-full bg-rose-500"></span>
+        <span id="api-status-label">Checking Backend...</span>
       </div>
 
-      <!-- Active Uploaded File Pill (No hardcoded titanic.csv!) -->
+      <!-- Active Uploaded File Pill -->
       <div id="active-file-pill" class="px-3 py-1.5 rounded-xl bg-stone-100 border border-[#DFD6C0] text-xs font-mono-code font-bold text-stone-600 flex items-center gap-1.5">
         <span>📄</span>
         <span id="active-file-pill-text">No CSV uploaded</span>
@@ -126,7 +119,7 @@
         <input id="csv-file-input" type="file" accept=".csv" class="hidden" />
       </label>
 
-      <!-- Target Column Selector -->
+      <!-- Target Column Selector (Changing target ONLY updates insights, does NOT auto-start training) -->
       <div class="flex items-center gap-1 bg-white px-2.5 py-1 rounded-xl border border-[#DFD6C0]">
         <span class="text-[10px] font-mono-code uppercase text-stone-400 font-bold">Target:</span>
         <select id="target-column-select" class="text-xs font-mono-code font-bold text-stone-900 bg-transparent focus:outline-none cursor-pointer">
@@ -134,7 +127,7 @@
         </select>
       </div>
 
-      <!-- Run Podium Button -->
+      <!-- Run Podium Button (Training ONLY starts when this button is clicked) -->
       <button id="btn-run-podium" class="px-4 py-1.5 rounded-xl bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-stone-950 font-extrabold text-xs tracking-tight transition flex items-center gap-1.5 shadow-sm border border-amber-600 cursor-pointer">
         <span>🚀 Run Podium</span>
       </button>
@@ -149,7 +142,7 @@
   <!-- MAIN WORKSPACE AREA -->
   <main class="flex-1 w-full max-w-[1440px] mx-auto px-4 py-1.5 flex flex-col">
 
-    <!-- CLASSIC WORKSPACE: 2D Pixel Office + Right Inspector Sidebar -->
+    <!-- 2D Pixel Office + Right Inspector Sidebar -->
     <div id="classic-workspace" class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
 
       <!-- LEFT 8 COLS: Munder Difflin Pixel Office Monitor Frame -->
@@ -158,7 +151,7 @@
 
           <!-- Top HUD Overlay Inside Frame -->
           <div class="flex flex-wrap items-center justify-between gap-2 pb-2 px-1 text-[11px] font-mono-code text-stone-300">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2.5">
               <span class="flex items-center gap-1.5">
                 <span id="hud-status-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
                 <strong class="text-white" id="hud-dataset-name">Awaiting CSV upload...</strong>
@@ -167,19 +160,24 @@
               <span>Target: <strong class="text-amber-300" id="hud-target-col">—</strong></span>
               <span class="text-stone-400 hidden sm:inline">|</span>
               <span class="hidden sm:inline">Rows: <strong class="text-white" id="hud-rows-count">0</strong></span>
-              <span class="hidden md:inline text-stone-400 text-[10px]" id="upload-sub-label">Upload a .csv file to begin</span>
             </div>
 
-            <!-- Floor Choreography Controls -->
-            <div class="flex items-center gap-1.5">
+            <!-- Floor Choreography & Interactive Modals Controls -->
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button id="btn-open-xai" class="px-2 py-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/50 text-indigo-200 text-[10px] font-bold transition cursor-pointer" title="Feature Importance & Confusion Matrix">
+                📊 XAI Board
+              </button>
+              <button id="btn-open-sandbox" class="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-[10px] font-bold transition cursor-pointer" title="Test Winner on Single Row">
+                🔮 Test Winner
+              </button>
               <button id="btn-standup" class="px-2 py-0.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-100 text-[10px] font-bold transition cursor-pointer">
                 📋 Standup
               </button>
               <button id="btn-queue-lounge" class="px-2 py-0.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-100 text-[10px] font-bold transition cursor-pointer">
-                ☕ Coffee Break
+                ☕ Coffee
               </button>
               <button id="btn-desks" class="px-2 py-0.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-100 text-[10px] font-bold transition cursor-pointer">
-                💻 At Desks
+                💻 Desks
               </button>
               <button id="btn-podium-ceremony" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 text-[10px] font-bold transition cursor-pointer">
                 🏆 Podium Ramp
@@ -193,10 +191,24 @@
             <!-- Vector DOM Layer for 100% Crisp Speech Bubbles & Dark Nameplates -->
             <div id="office-dom-overlay" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
 
-            <!-- Bottom-Left Memory Pill Badge -->
-            <div class="absolute bottom-2.5 left-2.5 pointer-events-none flex items-center gap-1.5 bg-[#1E2024]/90 border border-stone-600/80 px-2.5 py-1 rounded-md text-[10px] font-mono-code text-stone-200 shadow-md">
-              <span>🧠</span>
-              <span>memory • sklearn-gridsearch</span>
+            <!-- Real-Time Live System Wall Clock (Bottom-Left Munder Difflin Style) -->
+            <div class="absolute bottom-2.5 left-2.5 pointer-events-none flex items-center gap-2.5 bg-[#FAF6EC]/95 border-2 border-stone-800 px-3 py-1.5 rounded-xl text-stone-900 shadow-lg">
+              <span id="clock-indicator-dot" class="w-3.5 h-3.5 rounded-full bg-amber-500 border border-stone-800 shrink-0"></span>
+              <div>
+                <div class="flex items-center gap-2 font-mono-code leading-none">
+                  <span id="office-clock-time" class="font-black text-xs tracking-tight">--:--</span>
+                  <span id="office-clock-status" class="text-[9px] uppercase font-bold text-stone-500">LIVE TIME</span>
+                </div>
+                <div class="w-28 h-1 bg-stone-200 rounded-full overflow-hidden mt-1">
+                  <div id="office-clock-progress" class="bg-amber-500 h-full w-full transition-all duration-300"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom-Right Pipeline Pill Badge -->
+            <div class="absolute bottom-2.5 right-2.5 pointer-events-none flex items-center gap-1.5 bg-[#1E2024]/90 border border-stone-600/80 px-2.5 py-1 rounded-md text-[10px] font-mono-code text-stone-200 shadow-md">
+              <span>⚡</span>
+              <span id="pipeline-mode-pill">pipeline • sklearn-gridsearch</span>
             </div>
 
             <!-- Toast Notification Pill -->
@@ -207,7 +219,7 @@
           </div>
         </div>
 
-        <!-- Bottom Character Dock (Quick Select for Grid-Master + 5 ML Models) -->
+        <!-- Bottom Character Dock -->
         <div id="bottom-character-dock" class="flex items-center gap-2 overflow-x-auto pb-1"></div>
       </div>
 
@@ -241,13 +253,56 @@
 
         <!-- TAB 2: PODIUM LEADERBOARD -->
         <div id="tab-content-leaderboard" class="hidden flex-1 flex flex-col p-3 overflow-y-auto space-y-3">
+          <div id="podium-demo-banner" class="hidden px-3 py-1.5 rounded-lg bg-amber-100 border border-amber-400 text-amber-950 text-[11px] font-mono-code font-bold text-center">
+            ⚠️ DEMO MODE: SIMULATED SCORES (Backend Offline)
+          </div>
+
           <div id="podium-top3-cards" class="grid grid-cols-3 gap-2"></div>
+
+          <!-- Winner Export & Live Sandbox Action Buttons -->
+          <div id="winner-actions-panel" class="hidden bg-amber-50/90 rounded-xl p-2.5 border border-amber-300 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono-code font-extrabold uppercase text-amber-900">🏆 Winner Actions &amp; Artifacts</span>
+              <span id="winner-artifact-badge" class="text-[10px] font-mono-code font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded">.joblib saved</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button onclick="downloadWinnerJoblib()" class="px-2.5 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white font-bold text-[11px] flex items-center justify-center gap-1 transition cursor-pointer shadow-2xs">
+                <span>⬇️</span> <span id="download-joblib-btn-label">Download .joblib</span>
+              </button>
+              <button onclick="copyWinnerSklearnCode()" class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-stone-900 border border-amber-400 font-bold text-[11px] flex items-center justify-center gap-1 transition cursor-pointer shadow-2xs">
+                <span>📋</span> <span id="copy-code-btn-label">Copy Sklearn Code</span>
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button onclick="openPredictionSandboxModal()" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center justify-center gap-1 transition cursor-pointer">
+                <span>🔮</span> <span>Test Single Row</span>
+              </button>
+              <button onclick="openXaiModal()" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center justify-center gap-1 transition cursor-pointer">
+                <span>📊</span> <span>Feature Importance</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Leaderboard Ranked Rows -->
           <div class="bg-white rounded-xl border border-[#DFD6C0] overflow-hidden">
             <div class="px-3 py-2 bg-[#EFE8D5] border-b border-[#DFD6C0] text-[10px] font-mono-code font-bold uppercase text-stone-600 flex justify-between">
               <span>Rank &amp; Model (Best Params)</span>
               <span>Score / Time</span>
             </div>
             <div id="leaderboard-rows-container" class="divide-y divide-stone-100"></div>
+          </div>
+
+          <!-- Head-to-Head Model Comparison Card (Accuracy vs. Speed Tradeoff) -->
+          <div id="head-to-head-card" class="hidden bg-white rounded-xl border border-[#DFD6C0] p-3 space-y-2.5 shadow-2xs">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono-code font-extrabold uppercase text-stone-500">⚔️ Head-to-Head: Accuracy vs. Speed</span>
+              <span class="text-[10px] font-mono-code text-amber-700 font-bold">Tradeoff Analysis</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <select id="compare-model-a" onchange="renderHeadToHeadComparison()" class="text-[11px] font-mono-code font-bold bg-[#FAF6EC] border border-[#DFD6C0] rounded-lg px-2 py-1 text-stone-800"></select>
+              <select id="compare-model-b" onchange="renderHeadToHeadComparison()" class="text-[11px] font-mono-code font-bold bg-[#FAF6EC] border border-[#DFD6C0] rounded-lg px-2 py-1 text-stone-800"></select>
+            </div>
+            <div id="compare-metrics-body" class="text-xs space-y-1.5"></div>
           </div>
         </div>
 
@@ -258,6 +313,9 @@
 
         <!-- TAB 4: DATASET INSIGHTS (/insights/{dataset_id}) -->
         <div id="tab-content-insights" class="hidden flex-1 flex flex-col p-3 overflow-y-auto space-y-3">
+          <div id="insights-mode-banner" class="hidden px-3 py-1.5 rounded-lg bg-amber-100 border border-amber-400 text-amber-950 text-[11px] font-mono-code font-bold">
+            ⚠️ Demo Mode: Client-side CSV preview (FastAPI backend offline)
+          </div>
           <div id="insights-warnings-box" class="space-y-1.5"></div>
           <div id="insights-stats-grid" class="grid grid-cols-2 gap-2"></div>
           <div class="bg-white p-2.5 rounded-xl border border-[#DFD6C0]">
@@ -271,7 +329,7 @@
         <div class="px-3 py-2.5 bg-[#EFE8D5] border-t border-[#DFD6C0] flex items-center justify-between text-[11px]">
           <div class="truncate pr-2">
             <span class="text-stone-500 font-semibold">Selected:</span>
-            <strong id="footer-selected-model" class="text-stone-900 ml-1">Random Forest (Forrest)</strong>
+            <strong id="footer-selected-model" class="text-stone-900 ml-1">Forrest (Random Forest)</strong>
           </div>
           <div id="footer-selected-params" class="font-mono-code text-[10px] text-amber-900 bg-amber-200/70 px-2 py-0.5 rounded truncate max-w-[160px]">
             Ready
@@ -280,45 +338,87 @@
       </div>
     </div>
 
-    <!-- PRO WORKSPACE: #1 Benchmarked Memory & Pipeline Layer -->
-    <div id="pro-workspace" class="hidden flex-col items-center justify-center py-8 px-4">
-      <div class="max-w-4xl w-full text-center space-y-5">
-        <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-stone-900">
-          <span class="bg-amber-300/80 px-2 py-0.5 rounded-lg">#1 benchmarked</span> AutoML memory layer
-        </h2>
-        <div class="max-w-xl mx-auto relative">
-          <input id="pro-memory-search" type="text" placeholder="Search every model's hyperparameters, CV folds, or dataset warnings..."
-                 class="w-full px-4 py-3 rounded-2xl bg-white border-2 border-[#DFD6C0] shadow-md text-sm font-mono-code focus:outline-none focus:border-amber-500" />
-          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono-code bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300 font-bold">Enter</span>
-        </div>
+  </main>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left pt-3">
-          <!-- Card 1: Who worked on it -->
-          <div class="bg-white rounded-2xl p-4 border border-[#DFD6C0] shadow-sm space-y-3">
-            <div class="text-xs font-extrabold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
-              <span>👥</span> <span>Who worked on it</span>
-            </div>
-            <div id="pro-card-workers" class="space-y-2.5"></div>
+  <!-- LIVE "TEST A SINGLE ROW" PREDICTION SANDBOX MODAL -->
+  <div id="sandbox-modal" class="fixed inset-0 bg-stone-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+    <div class="bg-[#FAF6EC] border-2 border-stone-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-[#DFD6C0] pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🔮</span>
+          <div>
+            <h3 class="font-extrabold text-sm text-stone-900">Live Prediction Sandbox — Test Winner</h3>
+            <p id="sandbox-winner-subtitle" class="text-[11px] font-mono-code text-stone-500">Dispatch a test row to the #1 Podium Winner</p>
           </div>
-          <!-- Card 2: Tickets / Pipeline Steps -->
-          <div class="bg-white rounded-2xl p-4 border border-[#DFD6C0] shadow-sm space-y-3">
-            <div class="text-xs font-extrabold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
-              <span>🎫</span> <span>Pipeline Tickets</span>
-            </div>
-            <div id="pro-card-tickets" class="space-y-2"></div>
-          </div>
-          <!-- Card 3: Memories & Guardrails -->
-          <div class="bg-white rounded-2xl p-4 border border-[#DFD6C0] shadow-sm space-y-3">
-            <div class="text-xs font-extrabold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
-              <span>🧠</span> <span>Memories &amp; Guardrails</span>
-            </div>
-            <div id="pro-card-memories" class="space-y-2"></div>
-          </div>
+        </div>
+        <button onclick="closePredictionSandboxModal()" class="w-7 h-7 rounded-lg bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold text-xs cursor-pointer">✕</button>
+      </div>
+
+      <div id="sandbox-inputs-grid" class="grid grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-1"></div>
+
+      <div id="sandbox-result-banner" class="hidden p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 flex items-center justify-between">
+        <div>
+          <div class="text-[10px] font-mono-code uppercase font-bold text-emerald-700">Predicted Output (Demo Estimate)</div>
+          <div id="sandbox-result-value" class="font-mono-code font-black text-base text-emerald-900 mt-0.5">—</div>
+        </div>
+        <div class="text-right">
+          <div class="text-[10px] font-mono-code text-emerald-700">Winner CV Score</div>
+          <div id="sandbox-result-conf" class="font-mono-code font-bold text-xs text-emerald-800">—</div>
         </div>
       </div>
-    </div>
 
-  </main>
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-[#DFD6C0]">
+        <button onclick="fillRandomSandboxRow()" class="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-100 border border-[#DFD6C0] text-xs font-bold text-stone-700 cursor-pointer">
+          🎲 Randomize Row
+        </button>
+        <button onclick="runLiveRowPrediction()" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-sm">
+          <span>✉️ Dispatch Envelope &amp; Predict</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISUAL FEATURE IMPORTANCE & CONFUSION MATRIX (XAI BOARD) MODAL -->
+  <div id="xai-modal" class="fixed inset-0 bg-stone-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+    <div class="bg-[#FAF6EC] border-2 border-stone-800 rounded-2xl max-w-2xl w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-[#DFD6C0] pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📊</span>
+          <div>
+            <h3 class="font-extrabold text-sm text-stone-900">Office Corkboard — Explainable AI (XAI) &amp; Diagnostics</h3>
+            <p id="xai-subtitle" class="text-[11px] font-mono-code text-stone-500">Top Feature Importances &amp; Validation Matrix</p>
+          </div>
+        </div>
+        <button onclick="closeXaiModal()" class="w-7 h-7 rounded-lg bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold text-xs cursor-pointer">✕</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Left: Top 5 Feature Importances -->
+        <div class="bg-white rounded-xl p-3.5 border border-[#DFD6C0] space-y-2.5">
+          <div class="text-xs font-extrabold text-stone-800 flex items-center justify-between">
+            <span>🌲 Feature Columns Overview</span>
+            <span class="text-[10px] font-mono-code text-stone-400">Active Inputs</span>
+          </div>
+          <div id="xai-feature-bars" class="space-y-2"></div>
+        </div>
+
+        <!-- Right: Confusion Matrix / Residual Diagnostics -->
+        <div class="bg-white rounded-xl p-3.5 border border-[#DFD6C0] space-y-2.5">
+          <div class="text-xs font-extrabold text-stone-800 flex items-center justify-between">
+            <span id="xai-matrix-title">🎯 Holdout Evaluation Metrics</span>
+            <span class="text-[10px] font-mono-code text-stone-400">20% Test Split</span>
+          </div>
+          <div id="xai-matrix-box"></div>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-[#DFD6C0]">
+        <button onclick="closeXaiModal()" class="px-4 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold cursor-pointer">
+          Done Inspecting
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script>
     /********************************************************************
@@ -361,6 +461,9 @@
       finishModel() {
         this.tone(523, 0.05, 'triangle', 0.025);
         setTimeout(() => this.tone(659, 0.08, 'triangle', 0.03), 55);
+      }
+      failSound() {
+        this.tone(220, 0.12, 'sawtooth', 0.03);
       }
       winFanfare() {
         [523, 659, 784, 1046].forEach((f, i) => {
@@ -409,8 +512,10 @@
         trainingsCount: 9,
         status: 'idle',
         score: null,
+        metrics: null,
         seconds: null,
         best_params: null,
+        error: null,
         current_task: 'Ready at desk',
         bubble: 'awaiting dataset',
         bubbleTimer: 160,
@@ -437,8 +542,10 @@
         trainingsCount: 12,
         status: 'idle',
         score: null,
+        metrics: null,
         seconds: null,
         best_params: null,
+        error: null,
         current_task: 'Ready at desk',
         bubble: '< reading train.py',
         bubbleTimer: 200,
@@ -465,8 +572,10 @@
         trainingsCount: 9,
         status: 'idle',
         score: null,
+        metrics: null,
         seconds: null,
         best_params: null,
+        error: null,
         current_task: 'Ready at desk',
         bubble: 'awaiting dataset',
         bubbleTimer: 180,
@@ -493,8 +602,10 @@
         trainingsCount: 9,
         status: 'idle',
         score: null,
+        metrics: null,
         seconds: null,
         best_params: null,
+        error: null,
         current_task: 'Ready at desk',
         bubble: '< checking pipeline',
         bubbleTimer: 190,
@@ -521,8 +632,10 @@
         trainingsCount: 18,
         status: 'idle',
         score: null,
+        metrics: null,
         seconds: null,
         best_params: null,
+        error: null,
         current_task: 'Ready at desk',
         bubble: 'awaiting dataset',
         bubbleTimer: 170,
@@ -550,7 +663,7 @@
     ];
 
     /********************************************************************
-     * 3. CLEAN INITIAL DATASET STATE (NO HARDCODED TITANIC)
+     * 3. CLEAN INITIAL DATASET STATE + FLYING ENVELOPE PACKETS STATE
      ********************************************************************/
     let currentDataset = {
       dataset_id: null,
@@ -566,12 +679,16 @@
       missing: [],
       target_info: null,
       warnings: [],
-      isLiveServerDataset: false
+      isLiveServerDataset: false,
+      isSimulatedDemo: false,
+      rawParsedRows: null,
+      rawHeaders: null
     };
 
     let selectedAgent = AGENT_ROSTER[2]; // Default Forrest (Random Forest)
     let isTrainingRun = false;
     let globalTick = 0;
+    let flyingPackets = [];
     let bossLogs = [];
     let liveFastApiAvailable = false;
     let apiBaseUrl = window.location.origin;
@@ -610,7 +727,8 @@
         bossDesk: { x: 96, y: 120 },
         confTable: { x: 255, y: 92, w: 220, h: 64 },
         podiumCenter: { x: cw - 150, y: 145 },
-        queueLounge: { x: cw - 185, y: 445 }
+        queueLounge: { x: cw - 185, y: 445 },
+        corkboard: { x: 225, y: 220, w: 120, h: 30 }
       };
     }
 
@@ -658,7 +776,92 @@
     }
 
     /********************************************************************
-     * 5. PIXEL-ART ARCHITECTURAL FLOORPLAN, 3-PLANK DESKS & PODIUM RAMP
+     * 5. FLYING ENVELOPES & REAL-TIME LIVE SYSTEM CLOCK
+     ********************************************************************/
+    function spawnFlyingPacket(fromX, fromY, toAgent, label = 'CSV', onArrive = null) {
+      flyingPackets.push({
+        x: fromX,
+        y: fromY,
+        targetAgent: toAgent,
+        label,
+        progress: 0,
+        onArrive
+      });
+    }
+
+    function updateAndDrawFlyingPackets() {
+      for (let i = flyingPackets.length - 1; i >= 0; i--) {
+        const pkt = flyingPackets[i];
+        const tx = pkt.targetAgent ? pkt.targetAgent.x : pkt.toX;
+        const ty = (pkt.targetAgent ? pkt.targetAgent.y : pkt.toY) - 14;
+        const dx = tx - pkt.x;
+        const dy = ty - pkt.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < 10) {
+          if (pkt.onArrive) pkt.onArrive();
+          flyingPackets.splice(i, 1);
+          continue;
+        }
+
+        pkt.x += (dx / dist) * 6.5;
+        pkt.y += (dy / dist) * 6.5;
+
+        const px = Math.round(pkt.x);
+        const py = Math.round(pkt.y + Math.sin(globalTick * 0.4) * 3);
+
+        ctx.fillStyle = '#1E1B4B';
+        ctx.fillRect(px - 11, py - 8, 22, 15);
+        ctx.fillStyle = '#A855F7';
+        ctx.fillRect(px - 9, py - 6, 18, 11);
+        ctx.fillStyle = '#E9D5FF';
+        ctx.fillRect(px - 7, py - 4, 14, 3);
+        ctx.fillStyle = '#581C87';
+        ctx.fillRect(px - 5, py - 1, 10, 2);
+      }
+    }
+
+    function tickOfficeWallClock() {
+      if (globalTick % 20 !== 0) return;
+
+      const now = new Date();
+      let hrs = now.getHours();
+      const mins = now.getMinutes();
+      const secs = now.getSeconds();
+      const period = hrs >= 12 ? 'PM' : 'AM';
+      hrs = hrs % 12 || 12;
+      const timeStr = `${hrs}:${mins.toString().padStart(2, '0')} ${period}`;
+
+      const timeEl = document.getElementById('office-clock-time');
+      const statusEl = document.getElementById('office-clock-status');
+      const progEl = document.getElementById('office-clock-progress');
+      const dotEl = document.getElementById('clock-indicator-dot');
+
+      if (timeEl) timeEl.textContent = timeStr;
+
+      const activeWorkers = getActiveAgentsForProblem().filter(a => !a.isBoss);
+      const finishedCount = activeWorkers.filter(a => a.status === 'done' || a.status === 'failed').length;
+
+      if (statusEl) {
+        statusEl.textContent = isTrainingRun
+          ? `TRAINING (${finishedCount}/${activeWorkers.length})`
+          : 'LIVE TIME';
+      }
+      if (dotEl) {
+        dotEl.className = isTrainingRun
+          ? 'w-3.5 h-3.5 rounded-full bg-emerald-500 border border-stone-800 animate-ping shrink-0'
+          : 'w-3.5 h-3.5 rounded-full bg-amber-500 border border-stone-800 shrink-0';
+      }
+      if (progEl) {
+        const pct = isTrainingRun
+          ? Math.max(15, Math.round((finishedCount / Math.max(1, activeWorkers.length)) * 100))
+          : Math.max(10, Math.round((secs / 60) * 100));
+        progEl.style.width = `${pct}%`;
+      }
+    }
+
+    /********************************************************************
+     * 6. PIXEL-ART ARCHITECTURAL FLOORPLAN, 3-PLANK DESKS & PODIUM RAMP
      ********************************************************************/
     function drawSteppedCross(x, y) {
       ctx.fillStyle = '#73837A';
@@ -782,7 +985,6 @@
       const pw = 165;
       const ph = 128;
 
-      // Red Velvet Carpet Runner under Podium
       ctx.fillStyle = '#4C1D24';
       ctx.fillRect(px, py + 24, pw, ph - 18);
       ctx.fillStyle = '#7F1D1D';
@@ -791,7 +993,6 @@
       ctx.fillRect(px + 3, py + 27, pw - 6, 2);
       ctx.fillRect(px + 3, py + ph + 1, pw - 6, 2);
 
-      // Podium Header Banner on Top Wall — Strictly "🏆 PODIUM RAMP"
       ctx.fillStyle = '#18181B';
       ctx.fillRect(px + 25, py - 18, 115, 18);
       ctx.fillStyle = '#F59E0B';
@@ -799,7 +1000,6 @@
       ctx.textAlign = 'center';
       ctx.fillText('🏆 PODIUM RAMP', px + 83, py - 6);
 
-      // 2ND Place Step (Left, Silver)
       const s2x = px + 14;
       const s2y = py + 66;
       ctx.fillStyle = '#1E293B';
@@ -812,7 +1012,6 @@
       ctx.font = '900 10px "JetBrains Mono", monospace';
       ctx.fillText('2ND', s2x + 22, s2y + 26);
 
-      // 1ST Place Step (Center Elevated, Gold)
       const s1x = px + 60;
       const s1y = py + 50;
       ctx.fillStyle = '#451A03';
@@ -825,7 +1024,6 @@
       ctx.font = '900 11px "JetBrains Mono", monospace';
       ctx.fillText('1ST', s1x + 23, s1y + 35);
 
-      // 3RD Place Step (Right, Bronze)
       const s3x = px + 108;
       const s3y = py + 72;
       ctx.fillStyle = '#431407';
@@ -900,11 +1098,19 @@
       ctx.fillRect(228, 222, 54, 24);
       ctx.fillStyle = '#DDA15E';
       ctx.fillRect(230, 224, 50, 20);
+      ctx.fillStyle = '#EF4444';
+      ctx.fillRect(235, 228, 8, 8);
+      ctx.fillStyle = '#3B82F6';
+      ctx.fillRect(248, 229, 12, 10);
 
       ctx.fillStyle = '#4B3621';
       ctx.fillRect(288, 222, 54, 24);
       ctx.fillStyle = '#E9C46A';
       ctx.fillRect(290, 224, 50, 20);
+      ctx.fillStyle = '#10B981';
+      ctx.fillRect(296, 228, 18, 4);
+      ctx.fillStyle = '#6366F1';
+      ctx.fillRect(296, 234, 28, 4);
 
       const alarms = [{ x: 65, y: 230 }, { x: 255, y: 20 }, { x: 525, y: 20 }];
       alarms.forEach(al => {
@@ -972,8 +1178,6 @@
       ctx.fillRect(kx + 100, ky - 20, 34, 56);
       ctx.fillStyle = '#9CA3AF';
       ctx.fillRect(kx + 102, ky - 18, 30, 22);
-      ctx.fillStyle = '#102A43';
-      ctx.fillRect(kx + 102, ky + 6, 30, 28);
       ctx.fillStyle = '#9CA3AF';
       ctx.fillRect(kx + 102, ky + 6, 30, 28);
       ctx.fillStyle = '#4B5563';
@@ -1016,13 +1220,13 @@
     }
 
     /********************************************************************
-     * 6. HIGH-DEFINITION 16-BIT RPG CHARACTER SPRITE RENDERER
+     * 7. HIGH-DEFINITION 16-BIT RPG CHARACTER SPRITE RENDERER
      ********************************************************************/
     function drawCharacterMiniature(ag, bobOffset) {
       const x = Math.round(ag.x);
       const y = Math.round(ag.y + bobOffset);
 
-      ctx.fillStyle = ag.auraColor || 'rgba(148, 163, 184, 0.22)';
+      ctx.fillStyle = ag.status === 'failed' ? 'rgba(239, 68, 68, 0.28)' : (ag.auraColor || 'rgba(148, 163, 184, 0.22)');
       ctx.beginPath();
       ctx.arc(x, y - 6, 23, 0, Math.PI * 2);
       ctx.fill();
@@ -1135,6 +1339,7 @@
       } else if (ag.accessory === 'hat') {
         ctx.fillStyle = '#171717';
         ctx.fillRect(x - 12, topY - 1, 24, 4);
+        ctx.fillStyle = '#171717';
         ctx.fillRect(x - 8, topY - 4, 16, 4);
       }
     }
@@ -1170,7 +1375,7 @@
     }
 
     /********************************************************************
-     * 7. AGENT MOVEMENT, AUTONOMOUS OFFICE LIFE & DOM OVERLAY RENDERER
+     * 8. AGENT MOVEMENT, AUTONOMOUS OFFICE LIFE & DOM OVERLAY RENDERER
      ********************************************************************/
     function updateAndDrawAgents() {
       const domOverlay = document.getElementById('office-dom-overlay');
@@ -1179,9 +1384,9 @@
       const activeAgents = getActiveAgentsForProblem();
 
       if (!isTrainingRun && globalTick % 240 === 0) {
-        const workers = activeAgents.filter(a => !a.isBoss);
+        const workers = activeAgents.filter(a => !a.isBoss && a.status === 'idle');
         const randomWorker = workers[Math.floor(Math.random() * workers.length)];
-        if (randomWorker && randomWorker.status !== 'done') {
+        if (randomWorker) {
           const dp = getDeskPosition(randomWorker.deskIdx);
           const atDesk = Math.hypot(randomWorker.x - dp.x, randomWorker.y - dp.y) < 15;
           if (atDesk && Math.random() < 0.45) {
@@ -1221,17 +1426,16 @@
         drawCharacterMiniature(ag, bob);
 
         const isSelected = selectedAgent && selectedAgent.id === ag.id;
+        const isFailed = ag.status === 'failed';
         const bubbleText = ag.bubble || ag.current_task || 'awaiting';
         const bx = Math.round(ag.x);
         const by = Math.round(ag.y - 38);
         const ny = Math.round(ag.y + 11);
-
-        // Theme A Label on Floor: e.g., "Grid-Master (Boss)" or "Forrest (RF)"
         const shortTag = ag.isBoss ? 'Boss' : ag.modelName;
 
         overlayHtml += `
           <div class="absolute transform -translate-x-1/2 -translate-y-full flex flex-col items-center" style="left:${bx}px; top:${by}px;">
-            <div class="pixel-speech-bubble ${isSelected ? 'active-selected' : ''}">${bubbleText}</div>
+            <div class="pixel-speech-bubble ${isSelected ? 'active-selected' : ''} ${isFailed ? 'bubble-failed' : ''}">${bubbleText}</div>
             <div class="flex flex-col items-start w-4 mt-0.5 ml-2">
               <div class="w-1.5 h-1.5 bg-white border border-stone-800 rounded-full"></div>
               <div class="w-1 h-1 bg-white border border-stone-800 rounded-full -ml-1 mt-0.5"></div>
@@ -1247,7 +1451,325 @@
     }
 
     /********************************************************************
-     * 8. SIDEBAR, LEADERBOARD, LOGS & INSIGHTS RENDERERS
+     * 9. HIGH-IMPACT FEATURES (EXPORT, SANDBOX, XAI, HEAD-TO-HEAD)
+     ********************************************************************/
+    window.copyWinnerSklearnCode = function() {
+      const winner = getWinnerAgent() || AGENT_ROSTER[2];
+      const csvFile = currentDataset.filename || 'dataset.csv';
+      const targetCol = currentDataset.target || 'target';
+      const isReg = currentDataset.problem_type === 'regression';
+
+      const estimatorMap = {
+        'Random Forest': isReg ? 'RandomForestRegressor' : 'RandomForestClassifier',
+        'KNN': isReg ? 'KNeighborsRegressor' : 'KNeighborsClassifier',
+        'SVM': 'SVC',
+        'SVR': 'SVR',
+        'Logistic Regression': 'LogisticRegression',
+        'Ridge Regression': 'Ridge',
+        'Naive Bayes': 'GaussianNB'
+      };
+      const estClass = estimatorMap[winner.modelName] || 'RandomForestClassifier';
+      const paramsEntries = Object.entries(winner.best_params || {})
+        .filter(([k]) => k !== 'tuned')
+        .map(([k, v]) => `${k}=${typeof v === 'string' && v !== 'None' ? `'${v}'` : v}`)
+        .join(', ');
+
+      const code = `# Generated by Podium AutoML — #1 Winner: ${winner.alias} (${winner.modelName})
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC, SVR
+
+df = pd.read_csv("${csvFile}").dropna(subset=["${targetCol}"])
+X, y = df.drop(columns=["${targetCol}"]), df["${targetCol}"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+num_cols = X_train.select_dtypes(include="number").columns.tolist()
+cat_cols = [c for c in X_train.columns if c not in num_cols]
+
+preprocessor = ColumnTransformer([
+    ("num", Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), num_cols),
+    ("cat", Pipeline([("impute", SimpleImputer(strategy="most_frequent")), ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False))]), cat_cols),
+])
+
+pipe = Pipeline([
+    ("prep", preprocessor),
+    ("model", ${estClass}(${paramsEntries}))
+])
+pipe.fit(X_train, y_train)
+print("Test Score:", pipe.score(X_test, y_test))`;
+
+      navigator.clipboard.writeText(code).then(() => {
+        sfx.winFanfare();
+        const lbl = document.getElementById('copy-code-btn-label');
+        if (lbl) {
+          lbl.textContent = 'Copied Python!';
+          setTimeout(() => { lbl.textContent = 'Copy Sklearn Code'; }, 2000);
+        }
+        showOfficeToast(`Copied ${winner.alias}'s Scikit-Learn Pipeline code!`, '📋');
+      });
+    };
+
+    window.downloadWinnerJoblib = async function() {
+      const winner = getWinnerAgent();
+      if (!winner || !currentDataset.dataset_id) {
+        showOfficeToast('Train a dataset on FastAPI first to download a .joblib artifact!', '⚠️');
+        return;
+      }
+      if (!liveFastApiAvailable || !currentDataset.isLiveServerDataset) {
+        showOfficeToast('Cannot download .joblib: FastAPI backend is offline (Demo Mode).', '⚠️');
+        return;
+      }
+
+      sfx.click();
+      const dsId = currentDataset.dataset_id;
+      const defaultFileName = `dataset_${dsId}_${winner.modelName}.joblib`;
+      const btnLbl = document.getElementById('download-joblib-btn-label');
+
+      try {
+        if (btnLbl) btnLbl.textContent = 'Downloading...';
+        const res = await fetch(`${apiBaseUrl}/download/${dsId}`);
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || `Server returned ${res.status}`);
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = defaultFileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        if (btnLbl) {
+          btnLbl.textContent = 'Downloaded!';
+          setTimeout(() => { btnLbl.textContent = 'Download .joblib'; }, 2000);
+        }
+        sfx.winFanfare();
+        showOfficeToast(`Downloaded binary ${defaultFileName} from FastAPI!`, '⬇️');
+        addBossLog(`Grid-Master (Boss): Downloaded binary artifact 'models_saved/${defaultFileName}' via /download/${dsId}.`);
+      } catch (err) {
+        if (btnLbl) btnLbl.textContent = 'Download .joblib';
+        showOfficeToast(`FastAPI download error: ${err.message}`, '⚠️');
+        addBossLog(`Grid-Master (Boss): Could not fetch /download/${dsId} (${err.message}).`);
+      }
+    };
+
+    window.openPredictionSandboxModal = function() {
+      const winner = getWinnerAgent() || AGENT_ROSTER[2];
+      sfx.click();
+      const modal = document.getElementById('sandbox-modal');
+      const sub = document.getElementById('sandbox-winner-subtitle');
+      const grid = document.getElementById('sandbox-inputs-grid');
+      document.getElementById('sandbox-result-banner').classList.add('hidden');
+
+      sub.textContent = `Active Winner: ${winner.alias} (${winner.modelName}) • Target: ${currentDataset.target || 'Outcome'}`;
+
+      const cols = (currentDataset.columns && currentDataset.columns.length > 1)
+        ? currentDataset.columns.filter(c => c !== currentDataset.target && !(currentDataset.dropped_columns || []).includes(c)).slice(0, 8)
+        : ['Feature_1', 'Feature_2', 'Category_A', 'Metric_Score'];
+
+      grid.innerHTML = cols.map((col, idx) => `
+        <div class="bg-white p-2 rounded-xl border border-[#DFD6C0]">
+          <label class="block text-[10px] font-mono-code font-bold text-stone-500 truncate mb-1">${col}</label>
+          <input type="text" data-sandbox-col="${col}" value="${(idx + 1) * 12.5}"
+                 class="sandbox-feature-input w-full font-mono-code text-xs font-bold text-stone-900 bg-[#FAF6EC] px-2 py-1 rounded border border-stone-300 focus:outline-none focus:border-amber-500" />
+        </div>
+      `).join('');
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+
+    window.closePredictionSandboxModal = function() {
+      const modal = document.getElementById('sandbox-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+
+    window.fillRandomSandboxRow = function() {
+      sfx.click();
+      document.querySelectorAll('.sandbox-feature-input').forEach(inp => {
+        inp.value = (Math.random() * 100).toFixed(1);
+      });
+    };
+
+    window.runLiveRowPrediction = function() {
+      const winner = getWinnerAgent() || AGENT_ROSTER[2];
+      const boss = AGENT_ROSTER[0];
+      sfx.dispatch();
+
+      const vals = Array.from(document.querySelectorAll('.sandbox-feature-input')).map(i => parseFloat(i.value) || 10);
+      const sum = vals.reduce((a, b) => a + b, 0);
+
+      let predText = '';
+      let confText = typeof winner.score === 'number' ? `Score: ${winner.score.toFixed(4)}` : 'Untrained';
+      if (currentDataset.problem_type === 'regression') {
+        const regVal = (sum * 1.42).toFixed(2);
+        predText = `${regVal} (Demo Estimate)`;
+      } else {
+        const classes = currentDataset.target_info && currentDataset.target_info.balance_percent
+          ? Object.keys(currentDataset.target_info.balance_percent)
+          : ['Class_1', 'Class_0'];
+        const chosen = classes[Math.round(sum) % classes.length];
+        predText = `${chosen} (Demo Estimate)`;
+      }
+
+      document.getElementById('sandbox-result-value').textContent = predText;
+      document.getElementById('sandbox-result-conf').textContent = confText;
+      document.getElementById('sandbox-result-banner').classList.remove('hidden');
+
+      boss.bubble = `✉️ testing row on ${winner.alias}`;
+      spawnFlyingPacket(boss.x, boss.y, winner, 'PREDICT', () => {
+        sfx.finishModel();
+        winner.bubble = `🔮 ${predText}`;
+        showOfficeToast(`${winner.alias}: ${predText}`, '🔮');
+        addBossLog(`Sandbox Preview: Dispatched test row to ${winner.alias} (${winner.modelName}) -> ${predText}.`);
+      });
+    };
+
+    window.openXaiModal = function() {
+      sfx.click();
+      const winner = getWinnerAgent() || AGENT_ROSTER[2];
+      const modal = document.getElementById('xai-modal');
+      document.getElementById('xai-subtitle').textContent = `Inspector: ${winner.alias} (${winner.modelName}) • Dataset: ${currentDataset.filename || 'None uploaded'}`;
+
+      const cols = (currentDataset.columns && currentDataset.columns.length > 1)
+        ? currentDataset.columns.filter(c => c !== currentDataset.target && !(currentDataset.dropped_columns || []).includes(c)).slice(0, 6)
+        : [];
+
+      const barsEl = document.getElementById('xai-feature-bars');
+      if (cols.length === 0) {
+        barsEl.innerHTML = `<div class="text-xs text-stone-400 py-4 text-center">Upload a CSV dataset to view active feature columns.</div>`;
+      } else {
+        barsEl.innerHTML = cols.map((col, idx) => `
+          <div class="flex items-center justify-between text-xs font-mono-code bg-[#FAF6EC] px-2.5 py-1.5 rounded-lg border border-[#E5DEC9]">
+            <span class="font-bold text-stone-800 truncate pr-2">${idx + 1}. ${col}</span>
+            <span class="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">Included in Pipeline</span>
+          </div>
+        `).join('');
+      }
+
+      const matrixTitle = document.getElementById('xai-matrix-title');
+      const matrixBox = document.getElementById('xai-matrix-box');
+      if (!winner || typeof winner.score !== 'number') {
+        matrixTitle.textContent = '🎯 Holdout Evaluation Metrics';
+        matrixBox.innerHTML = `<div class="text-xs text-stone-400 py-4 text-center">Run Podium training first to view real test-split evaluation metrics from train.py.</div>`;
+      } else if (currentDataset.problem_type === 'regression') {
+        matrixTitle.textContent = '📈 Regression Test Metrics (train.py)';
+        const r2Val = winner.metrics && winner.metrics.r2 !== undefined ? winner.metrics.r2.toFixed(4) : winner.score.toFixed(4);
+        const rmseVal = winner.metrics && winner.metrics.rmse !== undefined ? winner.metrics.rmse.toFixed(4) : '—';
+        matrixBox.innerHTML = `
+          <div class="grid grid-cols-2 gap-2 font-mono-code text-xs pt-1">
+            <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
+              <div class="text-[10px] text-emerald-700 font-bold">R² Score (Test)</div>
+              <div class="text-base font-black text-emerald-900 mt-0.5">${r2Val}</div>
+            </div>
+            <div class="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+              <div class="text-[10px] text-amber-800 font-bold">RMSE (Test)</div>
+              <div class="text-base font-black text-amber-950 mt-0.5">${rmseVal}</div>
+            </div>
+            <div class="col-span-2 p-2.5 rounded-lg bg-stone-50 border border-stone-200 text-[11px] text-stone-600">
+              Best Params: <strong>${JSON.stringify(winner.best_params || {})}</strong> (${winner.seconds}s)
+            </div>
+          </div>
+        `;
+      } else {
+        matrixTitle.textContent = '🎯 Classification Test Metrics (train.py)';
+        const f1Val = winner.metrics && winner.metrics.f1 !== undefined ? winner.metrics.f1.toFixed(4) : winner.score.toFixed(4);
+        const accVal = winner.metrics && winner.metrics.accuracy !== undefined ? winner.metrics.accuracy.toFixed(4) : '—';
+        matrixBox.innerHTML = `
+          <div class="grid grid-cols-2 gap-2 text-center font-mono-code text-xs pt-1">
+            <div class="p-2.5 rounded-xl bg-emerald-50 border-2 border-emerald-300">
+              <div class="text-[10px] font-bold text-emerald-700">WEIGHTED F1 SCORE</div>
+              <div class="text-lg font-black text-emerald-900">${f1Val}</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-indigo-50 border-2 border-indigo-200">
+              <div class="text-[10px] font-bold text-indigo-700">TEST ACCURACY</div>
+              <div class="text-lg font-black text-indigo-900">${accVal}</div>
+            </div>
+            <div class="col-span-2 p-2.5 rounded-lg bg-stone-50 border border-stone-200 text-left text-[11px] text-stone-600">
+              Best Params: <strong>${JSON.stringify(winner.best_params || {})}</strong> (${winner.seconds}s)
+            </div>
+          </div>
+        `;
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+
+    window.closeXaiModal = function() {
+      const modal = document.getElementById('xai-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+
+    window.renderHeadToHeadComparison = function() {
+      const card = document.getElementById('head-to-head-card');
+      const selA = document.getElementById('compare-model-a');
+      const selB = document.getElementById('compare-model-b');
+      const body = document.getElementById('compare-metrics-body');
+      if (!card || !selA || !selB || !body) return;
+
+      const doneModels = getActiveAgentsForProblem()
+        .filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number')
+        .sort((a, b) => b.score - a.score);
+
+      if (doneModels.length < 2) {
+        card.classList.add('hidden');
+        return;
+      }
+      card.classList.remove('hidden');
+
+      const prevA = selA.value;
+      const prevB = selB.value;
+      const opts = doneModels.map(m => `<option value="${m.id}">${m.alias} (${m.modelName})</option>`).join('');
+      selA.innerHTML = opts;
+      selB.innerHTML = opts;
+
+      selA.value = doneModels.some(m => m.id === prevA) ? prevA : doneModels[0].id;
+      selB.value = doneModels.some(m => m.id === prevB && prevB !== selA.value)
+        ? prevB
+        : (doneModels[1] ? doneModels[1].id : doneModels[0].id);
+
+      const mA = doneModels.find(m => m.id === selA.value) || doneModels[0];
+      const mB = doneModels.find(m => m.id === selB.value) || doneModels[1];
+
+      const scoreDiff = ((mA.score - mB.score) * 100).toFixed(2);
+      const fasterAgent = (mA.seconds || 1) <= (mB.seconds || 1) ? mA : mB;
+      const moreAccurateAgent = mA.score >= mB.score ? mA : mB;
+
+      body.innerHTML = `
+        <div class="grid grid-cols-2 gap-2 font-mono-code text-[11px] bg-[#FAF6EC] p-2 rounded-lg border border-[#E5DEC9]">
+          <div>
+            <div class="font-bold text-stone-800">${mA.alias}</div>
+            <div class="text-emerald-700 font-extrabold">Score: ${mA.score.toFixed(4)}</div>
+            <div class="text-stone-500">Time: ${mA.seconds}s</div>
+          </div>
+          <div class="border-l border-[#DFD6C0] pl-2">
+            <div class="font-bold text-stone-800">${mB.alias}</div>
+            <div class="text-emerald-700 font-extrabold">Score: ${mB.score.toFixed(4)}</div>
+            <div class="text-stone-500">Time: ${mB.seconds}s</div>
+          </div>
+        </div>
+        <div class="text-[11px] text-stone-600 leading-snug">
+          💡 <strong>Recommendation:</strong> Pick <strong>${moreAccurateAgent.alias}</strong> for peak accuracy (${Math.abs(scoreDiff)}% Δ), or <strong>${fasterAgent.alias}</strong> for fastest training latency (${fasterAgent.seconds}s).
+        </div>
+      `;
+    };
+
+    /********************************************************************
+     * 10. SIDEBAR, LEADERBOARD, LOGS & INSIGHTS RENDERERS
      ********************************************************************/
     function getActiveAgentsForProblem() {
       const isReg = currentDataset.problem_type === 'regression';
@@ -1277,8 +1799,11 @@
       if (pill && pillText) {
         if (currentDataset.filename) {
           const modeLabel = isReg ? 'Regression' : 'Classification';
-          pillText.textContent = `${currentDataset.filename} (${modeLabel})`;
-          pill.className = 'px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-mono-code font-bold text-emerald-900 flex items-center gap-1.5';
+          const demoTag = currentDataset.isLiveServerDataset ? '' : ' [DEMO PREVIEW]';
+          pillText.textContent = `${currentDataset.filename} (${modeLabel})${demoTag}`;
+          pill.className = currentDataset.isLiveServerDataset
+            ? 'px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-mono-code font-bold text-emerald-900 flex items-center gap-1.5'
+            : 'px-3 py-1.5 rounded-xl bg-amber-100 border border-amber-400 text-xs font-mono-code font-bold text-amber-950 flex items-center gap-1.5';
         } else {
           pillText.textContent = 'No CSV uploaded';
           pill.className = 'px-3 py-1.5 rounded-xl bg-stone-100 border border-[#DFD6C0] text-xs font-mono-code font-bold text-stone-600 flex items-center gap-1.5';
@@ -1303,7 +1828,7 @@
         const statusBadgeClass =
           ag.status === 'done' ? 'bg-emerald-100 text-emerald-800' :
           ag.status === 'training' ? 'bg-amber-200 text-amber-900 animate-pulse' :
-          ag.status === 'failed' ? 'bg-rose-100 text-rose-800' :
+          ag.status === 'failed' ? 'bg-rose-100 text-rose-800 font-extrabold' :
           'bg-stone-200 text-stone-700';
 
         const subRoleLabel = ag.isBoss ? 'Boss' : ag.displayRole;
@@ -1322,7 +1847,7 @@
                 <span class="text-[10px] font-mono-code px-1.5 py-0.2 rounded font-bold ${statusBadgeClass}">${ag.status}</span>
               </div>
               <div class="text-[10px] font-mono-code text-stone-500 truncate max-w-[165px]">
-                ${subRoleLabel} ${typeof ag.score === 'number' ? '• ' + ag.score.toFixed(4) : ''}
+                ${ag.status === 'failed' ? '❌ ' + (ag.error || 'Failed') : subRoleLabel + (typeof ag.score === 'number' ? ' • ' + ag.score.toFixed(4) : '')}
               </div>
             </div>
           </div>
@@ -1367,17 +1892,18 @@
         const dotClass =
           ag.status === 'done' ? 'bg-emerald-500' :
           ag.status === 'training' ? 'bg-amber-500 animate-pulse' :
-          ag.status === 'failed' ? 'bg-rose-500' :
+          ag.status === 'failed' ? 'bg-rose-600' :
           'bg-stone-400';
 
-        const rightLabel = typeof ag.score === 'number'
-          ? ag.score.toFixed(4)
-          : (ag.status === 'failed' ? 'Failed' : (ag.current_task || ag.status));
+        const rightLabel = ag.status === 'failed'
+          ? 'FAILED'
+          : (typeof ag.score === 'number' ? ag.score.toFixed(4) : (ag.current_task || ag.status));
 
         return `
           <div onclick="selectAgentFromDock('${ag.id}')"
                class="p-3 rounded-xl border cursor-pointer transition ${
-                 isSelected ? 'bg-amber-50 border-amber-500 shadow-xs' : 'bg-white hover:bg-stone-50 border-[#DFD6C0]'
+                 ag.status === 'failed' ? 'bg-rose-50/70 border-rose-300' :
+                 (isSelected ? 'bg-amber-50 border-amber-500 shadow-xs' : 'bg-white hover:bg-stone-50 border-[#DFD6C0]')
                }">
             <div class="flex items-center justify-between mb-1">
               <div class="flex items-center gap-1.5">
@@ -1389,8 +1915,8 @@
                 ${rightLabel}
               </span>
             </div>
-            <div class="flex items-center justify-between text-[10px] font-mono-code text-stone-500 bg-[#FAF6EC] px-2 py-1 rounded-lg border border-[#E5DEC9]">
-              <span class="truncate pr-2">${ag.error ? '⚠️ ' + ag.error : 'Grid: ' + ag.gridDesc}</span>
+            <div class="flex items-center justify-between text-[10px] font-mono-code ${ag.status === 'failed' ? 'text-rose-700 bg-rose-100/70 border-rose-200' : 'text-stone-500 bg-[#FAF6EC] border-[#E5DEC9]'} px-2 py-1 rounded-lg border">
+              <span class="truncate pr-2">${ag.status === 'failed' ? '❌ ' + (ag.error || 'Model training failed') : 'Grid: ' + ag.gridDesc}</span>
               <span class="font-bold text-stone-700 shrink-0">${ag.seconds ? ag.seconds + 's' : '--'}</span>
             </div>
           </div>
@@ -1401,17 +1927,44 @@
     function renderLeaderboardTab() {
       const top3Container = document.getElementById('podium-top3-cards');
       const rowsContainer = document.getElementById('leaderboard-rows-container');
+      const actionsPanel = document.getElementById('winner-actions-panel');
+      const demoBanner = document.getElementById('podium-demo-banner');
       if (!top3Container || !rowsContainer) return;
+
+      if (demoBanner) {
+        demoBanner.classList.toggle('hidden', !currentDataset.isSimulatedDemo);
+      }
 
       const doneModels = getActiveAgentsForProblem()
         .filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number')
         .sort((a, b) => b.score - a.score);
 
+      const failedModels = getActiveAgentsForProblem()
+        .filter(a => !a.isBoss && a.status === 'failed');
+
       if (doneModels.length === 0) {
-        top3Container.innerHTML = `<div class="col-span-3 text-center text-xs text-stone-400 py-4">${currentDataset.filename ? 'Training models on ' + currentDataset.filename + '...' : 'Upload a CSV file and click Run Podium'}</div>`;
-        rowsContainer.innerHTML = `<div class="p-4 text-center text-xs text-stone-400">No completed runs yet.</div>`;
+        if (actionsPanel) actionsPanel.classList.add('hidden');
+        document.getElementById('head-to-head-card').classList.add('hidden');
+        top3Container.innerHTML = `<div class="col-span-3 text-center text-xs text-stone-400 py-4">${
+          isTrainingRun
+            ? 'Training models on ' + currentDataset.filename + '...'
+            : (currentDataset.filename ? 'Select Target column and click "🚀 Run Podium" to start training' : 'Upload a CSV file and click "🚀 Run Podium"')
+        }</div>`;
+
+        if (failedModels.length > 0) {
+          rowsContainer.innerHTML = failedModels.map(ag => `
+            <div class="px-3 py-2.5 flex items-center justify-between text-xs bg-rose-50/60">
+              <div class="font-bold text-rose-800">❌ ${ag.alias} (${ag.modelName})</div>
+              <div class="font-mono-code text-[10px] text-rose-600">${ag.error || 'Failed'}</div>
+            </div>
+          `).join('');
+        } else {
+          rowsContainer.innerHTML = `<div class="p-4 text-center text-xs text-stone-400">No completed runs yet.</div>`;
+        }
         return;
       }
+
+      if (actionsPanel) actionsPanel.classList.remove('hidden');
 
       const podiumOrder = [doneModels[1], doneModels[0], doneModels[2]].filter(Boolean);
       top3Container.innerHTML = podiumOrder.map((ag) => {
@@ -1428,7 +1981,7 @@
         `;
       }).join('');
 
-      rowsContainer.innerHTML = doneModels.map((ag, idx) => {
+      let rowsHtml = doneModels.map((ag, idx) => {
         const rank = idx + 1;
         const pStr = Object.entries(ag.best_params || {}).map(([k, v]) => `${k}: ${v}`).join(', ');
         return `
@@ -1447,6 +2000,25 @@
           </div>
         `;
       }).join('');
+
+      // Append failed models at the bottom clearly marked as FAILED (never ranked as winners)
+      if (failedModels.length > 0) {
+        rowsHtml += failedModels.map(ag => `
+          <div class="px-3 py-2 flex items-center justify-between text-xs bg-rose-50/70">
+            <div class="flex items-center gap-2 truncate pr-2">
+              <span class="w-5 h-5 rounded-full bg-rose-200 text-rose-800 font-mono-code font-bold text-[10px] flex items-center justify-center shrink-0">✕</span>
+              <div class="truncate">
+                <div class="font-bold text-rose-900">${ag.alias} <span class="font-mono-code font-normal text-rose-600 text-[11px]">(${ag.modelName})</span></div>
+                <div class="font-mono-code text-[10px] text-rose-600 truncate max-w-[190px]">${ag.error || 'Failed'}</div>
+              </div>
+            </div>
+            <div class="text-right shrink-0 font-mono-code font-bold text-rose-700 text-[11px]">FAILED</div>
+          </div>
+        `).join('');
+      }
+
+      rowsContainer.innerHTML = rowsHtml;
+      renderHeadToHeadComparison();
     }
 
     function addBossLog(message) {
@@ -1457,9 +2029,12 @@
 
       const div = document.createElement('div');
       const isWinner = message.startsWith('Winner:');
+      const isFailed = message.toLowerCase().includes('failed');
       const isBoss = message.startsWith('Boss:') || message.startsWith('Grid-Master');
       div.className = `leading-relaxed border-b border-stone-800 pb-1.5 ${
-        isWinner ? 'text-amber-300 font-bold' : (isBoss ? 'text-emerald-300 font-semibold' : 'text-stone-300')
+        isWinner ? 'text-amber-300 font-bold' :
+        isFailed ? 'text-rose-400 font-semibold' :
+        isBoss ? 'text-emerald-300 font-semibold' : 'text-stone-300'
       }`;
       div.innerHTML = `<span class="text-stone-500">[${timeStr}]</span> ${message}`;
       container.appendChild(div);
@@ -1469,6 +2044,11 @@
     function renderInsightsTab() {
       const d = currentDataset;
       const warnBox = document.getElementById('insights-warnings-box');
+      const modeBanner = document.getElementById('insights-mode-banner');
+      if (modeBanner) {
+        modeBanner.classList.toggle('hidden', !d.filename || d.isLiveServerDataset);
+      }
+
       if (!d.filename) {
         warnBox.innerHTML = `<div class="p-3 rounded-xl bg-stone-100 text-stone-500 text-xs">Upload a CSV file to inspect rows, dropped noise columns, and target distribution.</div>`;
         document.getElementById('insights-stats-grid').innerHTML = '';
@@ -1527,6 +2107,7 @@
         });
       } else if (d.target_info && d.target_info.min !== undefined) {
         html += `
+          <div class="font-bold text-xs text-stone-700 mb-1.5">Target Summary (${d.target} — Regression):</div>
           <div class="grid grid-cols-2 gap-2 font-mono-code text-xs">
             <div>Min: <strong>${d.target_info.min}</strong></div>
             <div>Max: <strong>${d.target_info.max}</strong></div>
@@ -1535,74 +2116,135 @@
           </div>
         `;
       }
-      targetBox.innerHTML = html;
+      targetBox.innerHTML = html || `<span class="text-xs text-stone-400">Select a target column to inspect distribution.</span>`;
     }
 
     function updateSelectedAgentFooter() {
       if (!selectedAgent) return;
       document.getElementById('footer-selected-model').textContent = `${selectedAgent.alias} (${selectedAgent.displayRole})`;
+      if (selectedAgent.status === 'failed') {
+        document.getElementById('footer-selected-params').textContent = `FAILED: ${selectedAgent.error || 'Error'}`;
+        return;
+      }
       const pStr = Object.entries(selectedAgent.best_params || {})
         .map(([k, v]) => `${k}: ${v}`)
         .join(', ');
       document.getElementById('footer-selected-params').textContent = pStr || 'Ready';
     }
 
-    function renderProMemoryView() {
-      const searchQ = (document.getElementById('pro-memory-search').value || '').toLowerCase();
-      const workersEl = document.getElementById('pro-card-workers');
-      const ticketsEl = document.getElementById('pro-card-tickets');
-      const memoriesEl = document.getElementById('pro-card-memories');
+    /********************************************************************
+     * 11. REAL CLIENT-SIDE CSV INSIGHTS CALCULATOR (NO FAKE 58%/42% DATA)
+     ********************************************************************/
+    function computeClientSideInsightsForTarget(headers, rows, targetCol) {
+      const targetIdx = headers.indexOf(targetCol);
+      const validRows = targetIdx >= 0
+        ? rows.filter(r => r[targetIdx] !== undefined && r[targetIdx] !== '')
+        : rows;
 
-      const active = getActiveAgentsForProblem().filter(a => !a.isBoss);
-      workersEl.innerHTML = active.map(ag => `
-        <div class="flex items-center justify-between text-xs">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full ${ag.status === 'done' ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
-            <div>
-              <div class="font-bold text-stone-900">${ag.alias} <span class="text-stone-400 font-normal">(${ag.displayRole})</span></div>
-              <div class="text-[10px] font-mono-code text-stone-500">best_params: ${JSON.stringify(ag.best_params || {})}</div>
-            </div>
-          </div>
-          <span class="font-mono-code font-bold text-emerald-700 text-[11px]">${typeof ag.score === 'number' ? ag.score.toFixed(4) : ''}</span>
-        </div>
-      `).join('');
+      const totalRows = validRows.length;
+      let numericCount = 0;
+      const dropped = [];
+      const missingList = [];
 
-      const droppedCount = (currentDataset.dropped_columns || []).length;
-      const tickets = [
-        { code: 'prep-01', title: `drop_noise_columns (${droppedCount} dropped)`, status: currentDataset.filename ? 'Done' : 'Idle' },
-        { code: 'prep-02', title: 'SimpleImputer (median / most_frequent)', status: currentDataset.filename ? 'Done' : 'Idle' },
-        { code: 'prep-03', title: 'StandardScaler + OneHotEncoder', status: currentDataset.filename ? 'Done' : 'Idle' },
-        { code: 'cv-04', title: `GridSearchCV (cv=3, scoring=${currentDataset.problem_type === 'classification' ? 'f1_weighted' : 'r2'})`, status: isTrainingRun ? 'Active' : (currentDataset.filename ? 'Done' : 'Idle') }
-      ];
-      ticketsEl.innerHTML = tickets
-        .filter(t => !searchQ || t.title.toLowerCase().includes(searchQ))
-        .map(t => `
-          <div class="flex items-center justify-between p-2 rounded-xl bg-stone-50 border border-stone-200 text-xs">
-            <div class="truncate pr-2">
-              <span class="font-mono-code text-[10px] text-stone-400 mr-1">${t.code}</span>
-              <span class="font-semibold text-stone-800">${t.title}</span>
-            </div>
-            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0">${t.status}</span>
-          </div>
-        `).join('');
+      headers.forEach((col, cIdx) => {
+        let missingCount = 0;
+        const nonEmpty = [];
+        for (const r of validRows) {
+          const val = r[cIdx];
+          if (val === undefined || val === '') {
+            missingCount++;
+          } else {
+            nonEmpty.push(val);
+          }
+        }
+        if (missingCount > 0 && totalRows > 0) {
+          missingList.push({
+            column: col,
+            missing: missingCount,
+            percent: Number(((missingCount / totalRows) * 100).toFixed(1))
+          });
+        }
+        if (col === targetCol) return;
 
-      const memories = currentDataset.filename ? [
-        `Dataset '${currentDataset.filename}' auto-detected as '${currentDataset.problem_type}' on target '${currentDataset.target}'.`,
-        `SAMPLE_LIMIT = 4000 rows (${currentDataset.rows > 4000 ? 'Active on this dataset' : 'Full dataset fit'}).`,
-        `SLOW_MODEL_LIMIT = 20000 rows for SVM, SVR & KNN.`,
-        ...(currentDataset.warnings || [])
-      ] : [
-        'Upload any CSV file to populate dataset guardrails and hyperparameter memory traces.'
-      ];
-      memoriesEl.innerHTML = memories.slice(0, 4).map(m => `
-        <div class="p-2 rounded-xl bg-[#FAF6EC] border border-[#E5DEC9] text-xs text-stone-700 leading-snug">
-          ${m}
-        </div>
-      `).join('');
+        const uniqueVals = new Set(nonEmpty);
+        const allNumeric = nonEmpty.length > 0 && nonEmpty.every(v => !isNaN(Number(v)));
+        const allIntegers = allNumeric && nonEmpty.every(v => Number.isInteger(Number(v)));
+        if (allNumeric) numericCount++;
+
+        const isIdLike = allIntegers && uniqueVals.size === validRows.length;
+        if (isIdLike || uniqueVals.size <= 1 || (!allNumeric && uniqueVals.size > 50)) {
+          dropped.push(col);
+        }
+      });
+
+      const targetVals = targetIdx >= 0 ? validRows.map(r => r[targetIdx]) : [];
+      const targetUnique = new Set(targetVals);
+      const targetNumeric = targetVals.length > 0 && targetVals.every(v => !isNaN(Number(v)));
+      const targetInteger = targetNumeric && targetVals.every(v => Number.isInteger(Number(v)));
+
+      let problemType = 'regression';
+      if (!targetNumeric || (targetInteger && targetUnique.size <= 15)) {
+        problemType = 'classification';
+      }
+
+      const warnings = [];
+      let targetInfo = { column: targetCol, type: problemType };
+
+      if (problemType === 'classification') {
+        const counts = {};
+        targetVals.forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+        const sortedEntries = Object.entries(counts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10);
+        const balance = {};
+        let minPct = 100;
+        sortedEntries.forEach(([k, cnt]) => {
+          const pct = totalRows > 0 ? Number(((cnt / totalRows) * 100).toFixed(1)) : 0;
+          balance[k] = pct;
+          if (pct < minPct) minPct = pct;
+        });
+        targetInfo.balance_percent = balance;
+        if (minPct < 10 && sortedEntries.length > 1) {
+          warnings.push('Target classes are imbalanced: a small class has under 10% of rows.');
+        }
+      } else {
+        const nums = targetVals.map(Number).sort((a, b) => a - b);
+        const minV = nums.length ? nums[0] : 0;
+        const maxV = nums.length ? nums[nums.length - 1] : 0;
+        const meanV = nums.length ? Number((nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(3)) : 0;
+        const mid = Math.floor(nums.length / 2);
+        const medianV = nums.length
+          ? Number((nums.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2).toFixed(3))
+          : 0;
+        targetInfo = { column: targetCol, type: 'regression', min: minV, max: maxV, mean: meanV, median: medianV };
+      }
+
+      missingList.forEach(item => {
+        if (item.percent > 30) {
+          warnings.push(`Column '${item.column}' is ${item.percent}% empty.`);
+        }
+      });
+      if (totalRows < 500) {
+        warnings.push('Small dataset (under 500 rows): scores can vary a lot.');
+      }
+      if (dropped.length > 0) {
+        warnings.push('These columns were ignored as noise: ' + dropped.join(', ') + '.');
+      }
+
+      return {
+        rows: totalRows,
+        numeric_features: numericCount,
+        text_features: Math.max(0, headers.length - 1 - numericCount),
+        dropped_columns: dropped,
+        missing: missingList,
+        problem_type: problemType,
+        target_info: targetInfo,
+        warnings
+      };
     }
 
     /********************************************************************
-     * 9. TRAINING ORCHESTRATION (FASTAPI BACKEND + SIMULATED CHOREOGRAPHY)
+     * 12. TRAINING ORCHESTRATION (STRICTLY ON "RUN PODIUM" CLICK)
      ********************************************************************/
     async function detectFastApiBackend() {
       try {
@@ -1613,11 +2255,38 @@
             liveFastApiAvailable = true;
             document.getElementById('api-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
             document.getElementById('api-status-label').textContent = 'FastAPI Live';
+            return;
           }
         }
-      } catch (_) {
-        liveFastApiAvailable = false;
+      } catch (_) {}
+      liveFastApiAvailable = false;
+      document.getElementById('api-status-dot').className = 'w-2 h-2 rounded-full bg-amber-500';
+      document.getElementById('api-status-label').textContent = 'Offline (Demo Mode)';
+    }
+
+    function resetAllAgentsToIdleForSelection() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
       }
+      isTrainingRun = false;
+      AGENT_ROSTER.forEach((ag) => {
+        if (!ag.isBoss) {
+          ag.status = 'idle';
+          ag.score = null;
+          ag.metrics = null;
+          ag.seconds = null;
+          ag.best_params = null;
+          ag.error = null;
+          ag.current_task = 'Ready — click Run Podium';
+          ag.bubble = 'ready to train';
+          const dp = getDeskPosition(ag.deskIdx);
+          ag.targetX = dp.x;
+          ag.targetY = dp.y;
+        } else {
+          ag.bubble = currentDataset.filename ? `Target: ${currentDataset.target}` : 'upload CSV to start';
+        }
+      });
     }
 
     function resetAllAgentsForNewRun() {
@@ -1625,7 +2294,9 @@
         if (!ag.isBoss) {
           ag.status = 'queued';
           ag.score = null;
+          ag.metrics = null;
           ag.seconds = null;
+          ag.best_params = null;
           ag.error = null;
           ag.current_task = 'Waiting in line';
           ag.bubble = 'awaiting';
@@ -1639,20 +2310,9 @@
       if (logBox) logBox.innerHTML = '';
     }
 
-    async function triggerPodiumTrainingRun() {
-      if (!currentDataset.filename) {
-        showOfficeToast('Please upload a CSV file first!', '📂');
-        return;
-      }
-
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
-      isTrainingRun = true;
-      sfx.dispatch();
-
-      const targetCol = document.getElementById('target-column-select').value;
+    // FIX #2: Refresh insights ONLY when CSV is uploaded or Target column changes (DOES NOT start training)
+    async function refreshDatasetInsightsOnly(targetCol) {
+      if (!currentDataset.filename) return;
       currentDataset.target = targetCol;
 
       if (liveFastApiAvailable && currentDataset.isLiveServerDataset) {
@@ -1671,101 +2331,106 @@
             }
           }
         } catch (_) {}
+      } else if (currentDataset.rawHeaders && currentDataset.rawParsedRows) {
+        const computed = computeClientSideInsightsForTarget(
+          currentDataset.rawHeaders,
+          currentDataset.rawParsedRows,
+          targetCol
+        );
+        Object.assign(currentDataset, computed);
       }
 
-      const colCount = Array.isArray(currentDataset.columns) ? currentDataset.columns.length : (currentDataset.columns || 0);
-      document.getElementById('hud-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+      document.getElementById('hud-status-dot').className = 'w-2 h-2 rounded-full bg-amber-400';
       document.getElementById('hud-dataset-name').textContent = currentDataset.filename;
-      document.getElementById('hud-target-col').textContent = targetCol;
+      document.getElementById('hud-target-col').textContent = currentDataset.target || '—';
       document.getElementById('hud-rows-count').textContent = (currentDataset.rows || 0).toLocaleString();
-      document.getElementById('upload-sub-label').textContent = `${(currentDataset.rows || 0).toLocaleString()} rows • ${colCount} cols`;
 
+      resetAllAgentsToIdleForSelection();
       syncModelNamesWithProblemType();
-      resetAllAgentsForNewRun();
       renderBottomCharacterDock();
       renderSidebarAgentsList();
       renderLeaderboardTab();
       renderInsightsTab();
-
-      if (liveFastApiAvailable && currentDataset.isLiveServerDataset) {
-        try {
-          const res = await fetch(`${apiBaseUrl}/run/${currentDataset.dataset_id}?target=${encodeURIComponent(targetCol)}`, {
-            method: 'POST'
-          });
-          if (res.ok) {
-            const runData = await res.json();
-            if (runData.problem_type) {
-              currentDataset.problem_type = runData.problem_type;
-              syncModelNamesWithProblemType();
-            }
-            showOfficeToast(`Training ${currentDataset.filename} (Target: ${targetCol})`, '🚀');
-            startFastApiPolling(currentDataset.dataset_id);
-            return;
-          } else {
-            const errJson = await res.json().catch(() => ({}));
-            showOfficeToast(errJson.detail || 'FastAPI /run error — running browser engine', '⚠️');
-          }
-        } catch (_) {}
-      }
-
-      runSimulatedMultiprocessingPipeline();
+      updateSelectedAgentFooter();
     }
 
-    function runSimulatedMultiprocessingPipeline() {
-      const workers = getActiveAgentsForProblem().filter(a => !a.isBoss);
+    // FIX #2 & #3: Training ONLY runs when user explicitly clicks "🚀 Run Podium"
+    async function triggerPodiumTrainingRun() {
+      if (!currentDataset.filename) {
+        showOfficeToast('Please upload a CSV file first!', '📂');
+        return;
+      }
+
+      const targetCol = document.getElementById('target-column-select').value;
+      if (!targetCol) {
+        showOfficeToast('Please select a Target column first!', '🎯');
+        return;
+      }
+      currentDataset.target = targetCol;
+
+      // FIX #3: Never silently run fake Math.random() scores if FastAPI backend is offline or fails!
+      if (!liveFastApiAvailable || !currentDataset.isLiveServerDataset) {
+        showOfficeToast('FastAPI backend is offline! Start uvicorn main:app to run real training.', '⚠️');
+        addBossLog(`Grid-Master (Boss): Cannot start real training — FastAPI backend is offline. Start 'uvicorn main:app --reload' and re-upload '${currentDataset.filename}'.`);
+        return;
+      }
+
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      isTrainingRun = true;
+      currentDataset.isSimulatedDemo = false;
+      sfx.dispatch();
+
       const boss = AGENT_ROSTER[0];
-
-      addBossLog(`Grid-Master (Boss): new ${currentDataset.problem_type} project '${currentDataset.filename}' (target: ${currentDataset.target}). ${workers.length} employees assigned.`);
-      showOfficeToast(`Training ${workers.length} models on ${currentDataset.filename}`, '📋');
-
-      boss.bubble = `< dispatching ${workers.length} models`;
-
-      workers.forEach((ag, idx) => {
+      getActiveAgentsForProblem().filter(a => !a.isBoss).forEach((worker, idx) => {
         setTimeout(() => {
-          ag.status = 'training';
-          ag.current_task = `GridSearchCV: ${ag.trainingsCount} fits`;
-          ag.bubble = `> running ${ag.trainingsCount} CV fits`;
-          const dp = getDeskPosition(ag.deskIdx);
-          ag.targetX = dp.x;
-          ag.targetY = dp.y;
-          addBossLog(`${ag.alias} (${ag.modelName}) started training.`);
-          sfx.click();
-          renderBottomCharacterDock();
-          renderSidebarAgentsList();
-        }, 500 + idx * 380);
-
-        const finishDelay = 2100 + idx * 650;
-        setTimeout(() => {
-          const baseScore = 0.79 + Math.random() * 0.14;
-          ag.score = Number(Math.min(0.995, Math.max(0.55, baseScore)).toFixed(4));
-          ag.seconds = Number((0.6 + Math.random() * 2.2).toFixed(1));
-          ag.best_params = { tuned: 'cv=3' };
-
-          ag.status = 'done';
-          ag.current_task = `Finished in ${ag.seconds}s`;
-          ag.bubble = `score: ${ag.score.toFixed(4)}`;
-
-          addBossLog(`${ag.alias} (${ag.modelName}) finished with score ${ag.score.toFixed(4)}.`);
-          sfx.finishModel();
-
-          positionDoneModelsOnPodium();
-          renderBottomCharacterDock();
-          renderSidebarAgentsList();
-          renderLeaderboardTab();
-          renderProMemoryView();
-
-          if (idx === workers.length - 1) {
-            isTrainingRun = false;
-            const winner = getWinnerAgent();
-            if (winner) {
-              addBossLog(`Winner: ${winner.alias} (${winner.modelName}) with score ${winner.score.toFixed(4)}.`);
-              boss.bubble = `🏆 Winner: ${winner.alias} (${winner.score.toFixed(4)})`;
-              showOfficeToast(`Winner: ${winner.alias} (${winner.modelName} • ${winner.score.toFixed(4)})!`, '🏆');
-              sfx.winFanfare();
-            }
-          }
-        }, finishDelay);
+          spawnFlyingPacket(boss.x, boss.y, worker, 'CSV');
+        }, idx * 120);
       });
+
+      document.getElementById('hud-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+      document.getElementById('hud-dataset-name').textContent = currentDataset.filename;
+      document.getElementById('hud-target-col').textContent = targetCol;
+      document.getElementById('hud-rows-count').textContent = (currentDataset.rows || 0).toLocaleString();
+
+      resetAllAgentsForNewRun();
+      renderBottomCharacterDock();
+      renderSidebarAgentsList();
+      renderLeaderboardTab();
+
+      try {
+        const res = await fetch(`${apiBaseUrl}/run/${currentDataset.dataset_id}?target=${encodeURIComponent(targetCol)}`, {
+          method: 'POST'
+        });
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          const errMsg = errJson.detail || `Server returned ${res.status}`;
+          isTrainingRun = false;
+          showOfficeToast(`FastAPI /run error: ${errMsg}`, '❌');
+          addBossLog(`Grid-Master (Boss): Training failed to start — ${errMsg}`);
+          resetAllAgentsToIdleForSelection();
+          renderBottomCharacterDock();
+          renderSidebarAgentsList();
+          return;
+        }
+
+        const runData = await res.json();
+        if (runData.problem_type) {
+          currentDataset.problem_type = runData.problem_type;
+          syncModelNamesWithProblemType();
+        }
+        showOfficeToast(`Training ${currentDataset.filename} (Target: ${targetCol})`, '🚀');
+        startFastApiPolling(currentDataset.dataset_id);
+      } catch (err) {
+        isTrainingRun = false;
+        showOfficeToast(`Network error calling /run: ${err.message}`, '❌');
+        addBossLog(`Grid-Master (Boss): Network error calling /run — ${err.message}`);
+        resetAllAgentsToIdleForSelection();
+        renderBottomCharacterDock();
+        renderSidebarAgentsList();
+      }
     }
 
     function positionDoneModelsOnPodium() {
@@ -1780,6 +2445,7 @@
       });
     }
 
+    // FIX #1: Failed models remain 'failed' with score = null and NEVER get fake scores or podium spots!
     function startFastApiPolling(datasetId) {
       if (pollTimer) clearInterval(pollTimer);
       let seenLogIds = new Set();
@@ -1808,36 +2474,39 @@
 
             latestJobs.forEach((j) => {
               const ag = AGENT_ROSTER.find(a => a.classModel === j.model || a.regModel === j.model);
-              if (ag) {
-                ag.modelName = j.model;
-                ag.status = j.status;
-                ag.current_task = j.current_task || j.status;
-                ag.error = j.error || null;
+              if (!ag) return;
 
-                if (j.status === 'training') {
-                  ag.bubble = `> ${j.current_task || 'GridSearchCV running'}`;
-                  const dp = getDeskPosition(ag.deskIdx || 0);
-                  ag.targetX = dp.x; ag.targetY = dp.y;
-                } else if (j.status === 'queued') {
-                  ag.bubble = 'awaiting';
-                  const qp = getQueuePosition(ag.deskIdx || 0);
-                  ag.targetX = qp.x; ag.targetY = qp.y;
-                } else if (j.status === 'done') {
-                  if (typeof j.score === 'number') ag.score = j.score;
-                  if (typeof j.seconds === 'number') ag.seconds = j.seconds;
-                  if (j.best_params) ag.best_params = j.best_params;
-                  ag.bubble = typeof j.score === 'number' ? `score: ${j.score.toFixed(4)}` : 'done';
-                } else if (j.status === 'failed') {
-                  const fallbackScore = Number((0.80 + (ag.deskIdx || 1) * 0.022 + Math.random() * 0.015).toFixed(4));
-                  ag.status = 'done';
-                  ag.score = fallbackScore;
-                  ag.seconds = Number((0.7 + (ag.deskIdx || 1) * 0.4).toFixed(1));
-                  ag.error = null;
-                  ag.current_task = `Finished in ${ag.seconds}s`;
-                  ag.bubble = `score: ${ag.score.toFixed(4)}`;
-                  const dp = getDeskPosition(ag.deskIdx || 0);
-                  ag.targetX = dp.x; ag.targetY = dp.y;
-                }
+              ag.modelName = j.model;
+              ag.status = j.status;
+              ag.current_task = j.current_task || j.status;
+              ag.error = j.error || null;
+
+              if (j.status === 'training') {
+                ag.bubble = `> ${j.current_task || 'GridSearchCV running'}`;
+                const dp = getDeskPosition(ag.deskIdx || 0);
+                ag.targetX = dp.x; ag.targetY = dp.y;
+              } else if (j.status === 'queued') {
+                ag.bubble = 'awaiting';
+                const qp = getQueuePosition(ag.deskIdx || 0);
+                ag.targetX = qp.x; ag.targetY = qp.y;
+              } else if (j.status === 'done') {
+                ag.score = typeof j.score === 'number' ? j.score : null;
+                ag.metrics = j.metrics || null;
+                ag.seconds = typeof j.seconds === 'number' ? j.seconds : null;
+                ag.best_params = j.best_params || null;
+                ag.bubble = typeof j.score === 'number' ? `score: ${j.score.toFixed(4)}` : 'done';
+              } else if (j.status === 'failed') {
+                // HONEST FAILURE STATE: No fake score, stays at desk with red failure bubble
+                ag.status = 'failed';
+                ag.score = null;
+                ag.metrics = null;
+                ag.best_params = null;
+                ag.error = j.error || 'Training failed';
+                ag.current_task = 'Failed';
+                ag.bubble = `❌ Failed`;
+                const dp = getDeskPosition(ag.deskIdx || 0);
+                ag.targetX = dp.x;
+                ag.targetY = dp.y;
               }
             });
 
@@ -1845,19 +2514,25 @@
             renderBottomCharacterDock();
             renderSidebarAgentsList();
             renderLeaderboardTab();
-            renderProMemoryView();
+            updateSelectedAgentFooter();
 
             const allFinished = latestJobs.length > 0 && latestJobs.every(j => j.status === 'done' || j.status === 'failed');
             if (allFinished) {
               clearInterval(pollTimer);
               pollTimer = null;
               isTrainingRun = false;
+              document.getElementById('hud-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+
               const winner = getWinnerAgent();
               if (winner) {
                 AGENT_ROSTER[0].bubble = `🏆 Winner: ${winner.alias} (${winner.score.toFixed(4)})`;
                 showOfficeToast(`Winner: ${winner.alias} (${winner.modelName} • ${winner.score.toFixed(4)})!`, '🏆');
+                sfx.winFanfare();
+              } else {
+                AGENT_ROSTER[0].bubble = `⚠️ All models failed`;
+                showOfficeToast('All models failed during training. Check Boss Logs.', '❌');
+                sfx.failSound();
               }
-              sfx.winFanfare();
             }
           }
         } catch (_) {}
@@ -1865,7 +2540,7 @@
     }
 
     /********************************************************************
-     * 10. CSV UPLOAD & UI EVENT LISTENERS
+     * 13. CSV UPLOAD & UI EVENT LISTENERS
      ********************************************************************/
     function populateTargetDropdown(columns, selectedCol) {
       const sel = document.getElementById('target-column-select');
@@ -1881,6 +2556,9 @@
           if (!file) return;
           document.getElementById('upload-filename-label').textContent = file.name;
           sfx.click();
+
+          // Re-check backend availability before upload
+          await detectFastApiBackend();
 
           if (liveFastApiAvailable) {
             try {
@@ -1902,31 +2580,26 @@
                   dropped_columns: [],
                   warnings: [],
                   isLiveServerDataset: true,
-                  isCustomUpload: true
+                  isSimulatedDemo: false,
+                  rawParsedRows: null,
+                  rawHeaders: null
                 };
                 populateTargetDropdown(info.columns, defaultTarget);
 
-                const insRes = await fetch(`${apiBaseUrl}/insights/${info.dataset_id}?target=${encodeURIComponent(defaultTarget)}`);
-                if (insRes.ok) {
-                  const ins = await insRes.json();
-                  currentDataset.numeric_features = ins.numeric_features;
-                  currentDataset.text_features = ins.text_features;
-                  currentDataset.dropped_columns = ins.dropped_columns || [];
-                  currentDataset.warnings = ins.warnings || [];
-                  if (ins.target) {
-                    currentDataset.target_info = ins.target;
-                    currentDataset.problem_type = ins.target.type;
-                  }
-                }
-                syncModelNamesWithProblemType();
-                renderInsightsTab();
-                triggerPodiumTrainingRun();
+                // FIX #2: Only fetch insights on upload; wait for user to verify Target & click "🚀 Run Podium"!
+                await refreshDatasetInsightsOnly(defaultTarget);
+                addBossLog(`Grid-Master (Boss): Uploaded '${info.filename}' (${info.rows} rows). Confirm Target column ('${defaultTarget}') and click '🚀 Run Podium' to start training.`);
+                showOfficeToast(`Uploaded ${info.filename}! Pick Target & click 🚀 Run Podium.`, '📂');
+                return;
+              } else {
+                const errData = await res.json().catch(() => ({}));
+                showOfficeToast(errData.detail || 'CSV Upload rejected by FastAPI', '❌');
                 return;
               }
             } catch (_) {}
           }
 
-          // Browser-side CSV parsing fallback
+          // FIX #4: Client-side CSV preview with REAL computed insights & explicit DEMO label (does NOT auto-train)
           const text = await file.text();
           const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
           if (lines.length < 2) {
@@ -1934,96 +2607,45 @@
             return;
           }
           const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-          const sampleRows = lines.slice(1, Math.min(lines.length, 400)).map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
-          const totalRows = lines.length - 1;
+          const parsedRows = lines.slice(1).map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
           const defaultTarget = headers[headers.length - 1];
 
-          let numericCount = 0;
-          const dropped = [];
-          headers.slice(0, -1).forEach((col, cIdx) => {
-            const vals = sampleRows.map(r => r[cIdx]).filter(v => v !== '' && v !== undefined);
-            const uniqueVals = new Set(vals);
-            const allNumeric = vals.every(v => !isNaN(Number(v)));
-            if (allNumeric) numericCount++;
-            const isIdLike = allNumeric && uniqueVals.size === vals.length && vals.length > 20;
-            if (isIdLike || uniqueVals.size <= 1 || (!allNumeric && uniqueVals.size > 50)) {
-              dropped.push(col);
-            }
-          });
-
-          const targetIdx = headers.length - 1;
-          const targetVals = sampleRows.map(r => r[targetIdx]).filter(Boolean);
-          const targetUnique = new Set(targetVals);
-          const targetNumeric = targetVals.every(v => !isNaN(Number(v)));
-          const problemType = (!targetNumeric || targetUnique.size <= 15) ? 'classification' : 'regression';
-
           currentDataset = {
-            dataset_id: Math.floor(Math.random() * 900) + 200,
+            dataset_id: null,
             filename: file.name,
-            problem_type: problemType,
-            target: defaultTarget,
             columns: headers,
-            rows: totalRows,
-            numeric_features: numericCount,
-            text_features: Math.max(0, headers.length - 1 - numericCount),
-            duplicate_rows: 0,
-            dropped_columns: dropped,
-            missing: [],
-            isCustomUpload: true,
-            target_info: {
-              column: defaultTarget,
-              type: problemType,
-              balance_percent: problemType === 'classification' ? { 'Class A': 58.0, 'Class B': 42.0 } : null,
-              min: 0, max: 100, mean: 48.2, median: 45.0
-            },
-            warnings: [
-              ...(dropped.length ? [`These columns were ignored as noise: ${dropped.join(', ')}.`] : []),
-              ...(totalRows < 500 ? ['Small dataset (under 500 rows): scores can vary a lot.'] : [])
-            ]
+            target: defaultTarget,
+            isLiveServerDataset: false,
+            isSimulatedDemo: true,
+            rawHeaders: headers,
+            rawParsedRows: parsedRows
           };
 
           populateTargetDropdown(headers, defaultTarget);
-          syncModelNamesWithProblemType();
-          renderInsightsTab();
-          triggerPodiumTrainingRun();
+          await refreshDatasetInsightsOnly(defaultTarget);
+          addBossLog(`[DEMO PREVIEW] Parsed '${file.name}' (${parsedRows.length} rows) in browser because FastAPI backend is offline.`);
+          showOfficeToast(`Previewing ${file.name} (Offline Mode). Start FastAPI to train!`, '⚠️');
         });
       }
 
+      // FIX #2: Changing Target dropdown ONLY updates insights & problem type; NEVER auto-starts training!
       const targetSel = document.getElementById('target-column-select');
       if (targetSel) {
-        targetSel.addEventListener('change', () => {
+        targetSel.addEventListener('change', async () => {
           if (!currentDataset.filename) return;
           sfx.click();
-          triggerPodiumTrainingRun();
+          const newTarget = targetSel.value;
+          await refreshDatasetInsightsOnly(newTarget);
+          addBossLog(`Grid-Master (Boss): Target column changed to '${newTarget}' (${currentDataset.problem_type}). Click '🚀 Run Podium' when ready.`);
+          showOfficeToast(`Target set to '${newTarget}'. Click 🚀 Run Podium to train!`, '🎯');
         });
       }
 
-      const classicBtn = document.getElementById('mode-classic-btn');
-      const proBtn = document.getElementById('mode-pro-btn');
-      const classicWorkspace = document.getElementById('classic-workspace');
-      const proWorkspace = document.getElementById('pro-workspace');
+      const btnXai = document.getElementById('btn-open-xai');
+      if (btnXai) btnXai.addEventListener('click', openXaiModal);
 
-      if (classicBtn && proBtn) {
-        classicBtn.addEventListener('click', () => {
-          sfx.click();
-          classicBtn.className = 'px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 bg-white text-stone-900 shadow-sm';
-          proBtn.className = 'px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 text-stone-600 hover:text-stone-900 flex items-center gap-1';
-          proWorkspace.classList.add('hidden');
-          proWorkspace.classList.remove('flex');
-          classicWorkspace.classList.remove('hidden');
-          resizeOfficeCanvas();
-        });
-
-        proBtn.addEventListener('click', () => {
-          sfx.click();
-          proBtn.className = 'px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 bg-[#F5B82E] text-stone-950 shadow-sm flex items-center gap-1';
-          classicBtn.className = 'px-4 py-1 rounded-full text-xs font-bold transition-all duration-200 text-stone-600 hover:text-stone-900';
-          classicWorkspace.classList.add('hidden');
-          proWorkspace.classList.remove('hidden');
-          proWorkspace.classList.add('flex');
-          renderProMemoryView();
-        });
-      }
+      const btnSandbox = document.getElementById('btn-open-sandbox');
+      if (btnSandbox) btnSandbox.addEventListener('click', openPredictionSandboxModal);
 
       document.querySelectorAll('.sidebar-tab').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -2097,9 +2719,6 @@
       const searchInput = document.getElementById('agent-search-input');
       if (searchInput) searchInput.addEventListener('input', renderSidebarAgentsList);
 
-      const proSearch = document.getElementById('pro-memory-search');
-      if (proSearch) proSearch.addEventListener('input', renderProMemoryView);
-
       const btnSound = document.getElementById('btn-sound');
       if (btnSound) {
         btnSound.addEventListener('click', (e) => {
@@ -2113,6 +2732,12 @@
           const rect = canvas.getBoundingClientRect();
           const cx = e.clientX - rect.left;
           const cy = e.clientY - rect.top;
+
+          const cb = getOfficeZones().corkboard;
+          if (cx >= cb.x && cx <= cb.x + cb.w && cy >= cb.y && cy <= cb.y + cb.h) {
+            openXaiModal();
+            return;
+          }
 
           let clicked = null;
           for (const ag of getActiveAgentsForProblem()) {
@@ -2147,17 +2772,19 @@
       window.__toastTimer = setTimeout(() => {
         toast.classList.add('opacity-0', 'translate-y-2');
         toast.classList.remove('opacity-100', 'translate-y-0');
-      }, 2800);
+      }, 3200);
     }
 
     /********************************************************************
-     * 11. MAIN ANIMATION LOOP & WINDOW ONLOAD
+     * 14. MAIN ANIMATION LOOP & WINDOW ONLOAD
      ********************************************************************/
     function animateLoop() {
       globalTick++;
+      tickOfficeWallClock();
       ctx.clearRect(0, 0, cw, ch);
       drawOfficeFloorplan();
       updateAndDrawAgents();
+      updateAndDrawFlyingPackets();
       requestAnimationFrame(animateLoop);
     }
 
@@ -2168,8 +2795,9 @@
 
       syncModelNamesWithProblemType();
       repositionAllDesksOnResize();
+      tickOfficeWallClock();
 
-      addBossLog("Grid-Master (Boss): Podium AutoML office initialized. Upload a .csv dataset to dispatch models.");
+      addBossLog("Grid-Master (Boss): Podium AutoML office initialized. Upload a .csv dataset, select your Target column, and click '🚀 Run Podium'.");
 
       renderBottomCharacterDock();
       renderSidebarAgentsList();
