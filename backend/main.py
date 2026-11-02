@@ -15,6 +15,8 @@ import multiprocessing as mp
 import queue as queue_lib
 import time
 import joblib
+from pydantic import BaseModel
+from ml.predict import feature_schema, run_prediction
 
 Base.metadata.create_all(bind=engine)
 
@@ -396,8 +398,8 @@ def get_insights(dataset_id: int, target: str | None = None,
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 app.mount("/app", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
-@app.get("/download/{dataset_id}")
-def download_winner_model(dataset_id: int, db: Session = Depends(get_db)):
+def latest_winner(db: Session, dataset_id: int):
+    """Winning job of the newest run that has a saved model file."""
     winner = (
         db.query(models.Job)
         .filter(models.Job.dataset_id == dataset_id,
@@ -406,10 +408,53 @@ def download_winner_model(dataset_id: int, db: Session = Depends(get_db)):
         .order_by(models.Job.id.desc())
         .first()
     )
-    if not winner or not winner.model_path or not os.path.exists(winner.model_path):
+    if not winner or not os.path.exists(winner.model_path):
         raise HTTPException(status_code=404, detail="Saved .joblib model not found on server")
+    return winner
+
+
+@app.get("/download/{dataset_id}")
+def download_winner_model(dataset_id: int, db: Session = Depends(get_db)):
+    winner = latest_winner(db, dataset_id)
     return FileResponse(
         path=winner.model_path,
         filename=os.path.basename(winner.model_path),
         media_type="application/octet-stream"
     )
+
+
+@app.get("/features/{dataset_id}")
+def get_features(dataset_id: int, db: Session = Depends(get_db)):
+    """Which inputs the winning model needs (used to build the prediction form)."""
+    winner = latest_winner(db, dataset_id)
+    dataset = db.get(models.Dataset, dataset_id)
+    pipe = joblib.load(winner.model_path)
+    return {
+        "model": winner.model_name,
+        "score": winner.score,
+        "problem_type": dataset.problem_type,
+        "target": dataset.target_column,
+        "features": feature_schema(pipe, pd.read_csv(dataset.file_path)),
+    }
+
+
+class PredictRequest(BaseModel):
+    row: dict
+
+
+@app.post("/predict/{dataset_id}")
+def predict(dataset_id: int, req: PredictRequest, db: Session = Depends(get_db)):
+    winner = latest_winner(db, dataset_id)
+    dataset = db.get(models.Dataset, dataset_id)
+    pipe = joblib.load(winner.model_path)
+    try:
+        result = run_prediction(pipe, req.row, dataset.problem_type)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not predict: {e}")
+    return {
+        "model": winner.model_name,
+        "score": winner.score,
+        "problem_type": dataset.problem_type,
+        "target": dataset.target_column,
+        **result,
+    }
