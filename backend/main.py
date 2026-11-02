@@ -4,6 +4,7 @@ from pathlib import Path
 from ml.train import (prepare_data, get_models, worker,
                       drop_noise_columns, detect_problem_type)
 import pandas as pd
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
@@ -395,14 +396,14 @@ def get_insights(dataset_id: int, target: str | None = None,
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 app.mount("/app", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
-from fastapi.responses import FileResponse
-
 @app.get("/download/{dataset_id}")
 def download_winner_model(dataset_id: int, db: Session = Depends(get_db)):
     winner = (
         db.query(models.Job)
-        .filter_by(dataset_id=dataset_id, status="done")
-        .order_by(models.Job.score.desc())
+        .filter(models.Job.dataset_id == dataset_id,
+                models.Job.status == "done",
+                models.Job.model_path.isnot(None))
+        .order_by(models.Job.id.desc())
         .first()
     )
     if not winner or not winner.model_path or not os.path.exists(winner.model_path):
