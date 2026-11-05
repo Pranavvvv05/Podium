@@ -17,6 +17,11 @@ import time
 import joblib
 from pydantic import BaseModel
 from ml.predict import feature_schema, run_prediction
+from ml.vision import (extract_zip, scan_folder, prepare_image_data,
+                       get_image_models, image_worker, load_image)
+import pickle
+import shutil
+import zipfile
 
 Base.metadata.create_all(bind=engine)
 
@@ -102,9 +107,17 @@ MODEL_DIR = "models_saved"
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 
+IMAGE_TYPE = "image_classification"
+MAX_ZIP_MB = 200
+
+
+def models_for(problem_type: str) -> dict:
+    return get_image_models() if problem_type == IMAGE_TYPE else get_models(problem_type)
+
+
 def count_trainings(problem_type: str, model_name: str) -> int:
     """GridSearchCV kitni baar train karega: settings x 3 folds."""
-    grid = get_models(problem_type)[model_name][1]
+    grid = models_for(problem_type)[model_name][1]
     settings = 1
     for values in grid.values():
         settings *= len(values)
@@ -116,7 +129,12 @@ def run_jobs(dataset_id: int):
     db = SessionLocal()  
     try:
         dataset = db.get(models.Dataset, dataset_id)
-        data = prepare_data(dataset.file_path, dataset.target_column)
+        is_image = dataset.problem_type == IMAGE_TYPE
+        if is_image:
+            data = prepare_image_data(dataset.file_path)
+        else:
+            data = prepare_data(dataset.file_path, dataset.target_column)
+        work = image_worker if is_image else worker
         waiting = (
             db.query(models.Job)
             .filter_by(dataset_id=dataset_id, status="queued")
@@ -142,7 +160,7 @@ def run_jobs(dataset_id: int):
                                   message=f"{job.model_name} started training."))
             db.commit()
             q = ctx.Queue()
-            proc = ctx.Process(target=worker, args=(q, job.model_name, data))
+            proc = ctx.Process(target=work, args=(q, job.model_name, data))
             proc.start()
             running.append({"proc": proc, "queue": q, "job": job, "t0": time.time()})
 
@@ -171,7 +189,7 @@ def run_jobs(dataset_id: int):
                 job.seconds = payload["seconds"]
                 job.current_task = f"Finished in {payload['seconds']}s"
                 if best["score"] is None or payload["score"] > best["score"]:
-                    best.update(score=payload["score"], model=payload["fitted"], job=job)
+                    best.update(score=payload["score"], model=pickle.loads(payload["fitted"]), job=job)
                 msg = f"{job.model_name} finished with score {payload['score']:.4f}."
             else:
                 job.status = "failed"
@@ -262,6 +280,73 @@ def run_dataset(dataset_id: int, target: str, background_tasks: BackgroundTasks,
         "jobs": [{"job_id": j.id, "model": j.model_name, "status": j.status} for j in jobs],
     }
 
+@app.post("/upload-images")
+def upload_images(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    if not file.filename.lower().endswith(".zip"):
+        raise HTTPException(status_code=400, detail="Only .zip files are allowed")
+
+    stamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+    zip_path = os.path.join(UPLOAD_DIR, f"{stamp}.zip")
+    folder = os.path.join(UPLOAD_DIR, f"images_{stamp}")
+    content = file.file.read()
+    if len(content) > MAX_ZIP_MB * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"File is too large. Limit is {MAX_ZIP_MB} MB")
+    with open(zip_path, "wb") as f:
+        f.write(content)
+
+    try:
+        classes = extract_zip(zip_path, folder)
+    except zipfile.BadZipFile:
+        shutil.rmtree(folder, ignore_errors=True)
+        raise HTTPException(status_code=400, detail="Could not read this file as a ZIP")
+    except ValueError as e:
+        shutil.rmtree(folder, ignore_errors=True)
+        raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        os.remove(zip_path)
+
+    total = sum(len(v) for v in classes.values())
+    dataset = models.Dataset(filename=file.filename, file_path=folder, n_rows=total,
+                             target_column="folder name", problem_type=IMAGE_TYPE,
+                             n_features=64 * 64 * 3)
+    db.add(dataset)
+    db.commit()
+    db.refresh(dataset)
+    return {
+        "dataset_id": dataset.id,
+        "filename": dataset.filename,
+        "images": total,
+        "classes": {name: len(files) for name, files in classes.items()},
+    }
+
+
+@app.post("/run-images/{dataset_id}")
+def run_image_dataset(dataset_id: int, background_tasks: BackgroundTasks,
+                      db: Session = Depends(get_db)):
+    dataset = db.get(models.Dataset, dataset_id)
+    if dataset is None or dataset.problem_type != IMAGE_TYPE:
+        raise HTTPException(status_code=404, detail="Image dataset not found")
+
+    jobs = []
+    for name in get_image_models():
+        job = models.Job(dataset_id=dataset.id, model_name=name, status="queued",
+                         current_task="Waiting in line")
+        db.add(job)
+        jobs.append(job)
+    db.add(models.BossLog(
+        dataset_id=dataset.id,
+        message=f"Boss: new image project '{dataset.filename}' "
+                f"({dataset.n_rows} images). {len(jobs)} employees assigned.",
+    ))
+    db.commit()
+    background_tasks.add_task(run_jobs, dataset.id)
+    return {
+        "dataset_id": dataset.id,
+        "problem_type": IMAGE_TYPE,
+        "jobs": [{"job_id": j.id, "model": j.model_name, "status": j.status} for j in jobs],
+    }
+
+
 @app.get("/jobs/{dataset_id}")
 def get_jobs(dataset_id: int, db: Session = Depends(get_db)):
     dataset = db.get(models.Dataset, dataset_id)
@@ -335,6 +420,16 @@ def get_insights(dataset_id: int, target: str | None = None,
     dataset = db.get(models.Dataset, dataset_id)
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
+
+    if dataset.problem_type == IMAGE_TYPE:
+        classes = scan_folder(dataset.file_path)
+        total = sum(len(v) for v in classes.values())
+        return {
+            "images": total,
+            "classes": {k: len(v) for k, v in classes.items()},
+            "balance_percent": {k: round(len(v) / total * 100, 1) for k, v in classes.items()},
+            "warnings": ["Small dataset (under 300 images): scores can vary a lot."] if total < 300 else [],
+        }
 
     df = pd.read_csv(dataset.file_path)
     target = target or dataset.target_column
@@ -428,6 +523,8 @@ def get_features(dataset_id: int, db: Session = Depends(get_db)):
     """Which inputs the winning model needs (used to build the prediction form)."""
     winner = latest_winner(db, dataset_id)
     dataset = db.get(models.Dataset, dataset_id)
+    if dataset.problem_type == IMAGE_TYPE:
+        raise HTTPException(status_code=400, detail="This is an image model: use /predict-image")
     pipe = joblib.load(winner.model_path)
     return {
         "model": winner.model_name,
@@ -444,8 +541,11 @@ class PredictRequest(BaseModel):
 
 @app.post("/predict/{dataset_id}")
 def predict(dataset_id: int, req: PredictRequest, db: Session = Depends(get_db)):
+    """Real prediction from the winning model for one row of input values."""
     winner = latest_winner(db, dataset_id)
     dataset = db.get(models.Dataset, dataset_id)
+    if dataset.problem_type == IMAGE_TYPE:
+        raise HTTPException(status_code=400, detail="This is an image model: use /predict-image")
     pipe = joblib.load(winner.model_path)
     try:
         result = run_prediction(pipe, req.row, dataset.problem_type)
@@ -457,4 +557,28 @@ def predict(dataset_id: int, req: PredictRequest, db: Session = Depends(get_db))
         "problem_type": dataset.problem_type,
         "target": dataset.target_column,
         **result,
+    }
+
+
+@app.post("/predict-image/{dataset_id}")
+def predict_image(dataset_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Real prediction from the winning image model for one uploaded picture."""
+    winner = latest_winner(db, dataset_id)
+    dataset = db.get(models.Dataset, dataset_id)
+    if dataset.problem_type != IMAGE_TYPE:
+        raise HTTPException(status_code=400, detail="This is not an image model: use /predict")
+    try:
+        x = load_image(file.file)[None]
+    except Exception:
+        raise HTTPException(status_code=400, detail="Could not read this file as an image")
+    pipe = joblib.load(winner.model_path)
+    proba = pipe.predict_proba(x)[0]
+    classes = [str(c) for c in pipe.classes_]
+    best = int(proba.argmax())
+    return {
+        "model": winner.model_name,
+        "score": winner.score,
+        "problem_type": IMAGE_TYPE,
+        "prediction": classes[best],
+        "probabilities": {c: round(float(p), 4) for c, p in zip(classes, proba)},
     }

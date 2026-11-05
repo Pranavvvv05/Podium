@@ -1,3 +1,4 @@
+import pickle
 import sys 
 import time 
 import pandas as pd 
@@ -10,9 +11,16 @@ from sklearn.metrics import accuracy_score,f1_score,mean_squared_error,r2_score
 from sklearn.model_selection import GridSearchCV,train_test_split
 from sklearn.neighbors import KNeighborsClassifier,KNeighborsRegressor
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neural_network import MLPClassifier,MLPRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder,StandardScaler
 from sklearn.svm import SVR,SVC
+
+try:
+    from ml.deep import TorchClassifier,TorchRegressor
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
 
 
 def detect_problem_type(y: pd.Series) -> str:
@@ -51,6 +59,29 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
         ("cat", categorical, cat_cols),
     ])
 def get_models(problem_type: str) -> dict:
+    models = _base_models(problem_type)
+    models.update(_deep_models(problem_type))
+    return models
+
+
+def _deep_models(problem_type: str) -> dict:
+    is_clf = problem_type == "classification"
+    mlp = MLPClassifier if is_clf else MLPRegressor
+    models = {
+        "ANN": (
+            mlp(max_iter=300, early_stopping=True, random_state=42),
+            {"model__hidden_layer_sizes": [(64,), (64, 32)], "model__alpha": [1e-4, 1e-2]},
+        ),
+    }
+    if HAS_TORCH:
+        cls = TorchClassifier if is_clf else TorchRegressor
+        grid = {"model__lr": [0.003, 0.01]}
+        models["CNN"] = (cls(arch="cnn"), grid)
+        models["RNN"] = (cls(arch="rnn"), grid)
+    return models
+
+
+def _base_models(problem_type: str) -> dict:
     """Each entry: name -> (estimator, param_grid). Grids are kept small for speed."""
     if problem_type == "classification":
         return {
@@ -249,7 +280,9 @@ def train_one(name: str, data: dict, n_jobs: int = -1) -> dict:
 def worker(queue, name: str, data: dict):
     """Alag process mein ek model train karke result queue mein daalta hai."""
     try:
-        queue.put(("ok", train_one(name, data, 1)))
+        result = train_one(name, data, 1)
+        result["fitted"] = pickle.dumps(result["fitted"])
+        queue.put(("ok", result))
     except Exception as e:
         queue.put(("error", str(e)))
 
