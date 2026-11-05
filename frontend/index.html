@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Podium — Office of ML Models</title>
+  <title>Podium — Multi-Floor Office of ML & Deep Learning Models</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,7 +49,7 @@
       font-size: 10.5px;
       font-weight: 700;
       letter-spacing: -0.02em;
-      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.24);
       white-space: nowrap;
       line-height: 1.25;
     }
@@ -58,15 +58,20 @@
       background: #FFFBEB;
       box-shadow: 0 2px 0 rgba(217, 119, 6, 0.35);
     }
+    .pixel-speech-bubble.bubble-dl {
+      border-color: #6366F1;
+      background: #EEF2FF;
+      color: #1E1B4B;
+    }
     .pixel-speech-bubble.bubble-failed {
       border-color: #DC2626;
       background: #FEF2F2;
       color: #991B1B;
     }
     .pixel-nameplate {
-      background: rgba(24, 24, 27, 0.88);
+      background: rgba(24, 24, 27, 0.92);
       color: #FAFAFA;
-      border: 1px solid rgba(63, 63, 70, 0.9);
+      border: 1px solid rgba(82, 82, 91, 0.95);
       border-radius: 5px;
       padding: 1px 6px;
       font-family: 'JetBrains Mono', monospace;
@@ -74,7 +79,7 @@
       font-weight: 800;
       letter-spacing: -0.01em;
       white-space: nowrap;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
     }
   </style>
 </head>
@@ -82,53 +87,86 @@
 
   <!-- TOP NAVIGATION BAR -->
   <header class="w-full max-w-[1440px] mx-auto px-4 pt-3 pb-2 flex flex-wrap items-center justify-between gap-3">
-    <!-- Brand Logo & Name -->
-    <div class="flex items-center gap-2.5">
-      <div class="w-9 h-9 rounded-xl bg-[#F5B82E] border-2 border-stone-800 shadow-xs flex items-center justify-center overflow-hidden">
+    <!-- Brand Logo & Floor Switcher -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 border-2 border-stone-900 shadow-sm flex items-center justify-center overflow-hidden">
         <canvas id="headerBossIcon" width="28" height="28" class="w-7 h-7"></canvas>
       </div>
       <div>
         <div class="flex items-center gap-2">
-          <span class="font-extrabold text-base tracking-tight text-stone-900">Podium</span>
-          <span class="text-[10px] font-mono-code font-bold uppercase px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-950 border border-amber-400/60" id="header-problem-badge">
-            READY // 5 MODELS
+          <span class="font-black text-base tracking-tight text-stone-900">Podium</span>
+          <span class="text-[10px] font-mono-code font-bold uppercase px-2 py-0.5 rounded-md bg-amber-200/90 text-amber-950 border border-amber-400/70" id="header-problem-badge">
+            READY // 8 MODELS
+          </span>
+          <span class="hidden md:inline-flex text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-900 border border-indigo-300">
+            1F ML + 2F DL
           </span>
         </div>
-        <p class="text-[11px] text-stone-500 font-medium leading-none mt-0.5">Multi-Model AutoML Harness • <span class="font-mono-code">train.py + main.py</span></p>
+        <p class="text-[11px] text-stone-500 font-medium leading-none mt-0.5">
+          Multi-Floor AutoML &amp; Deep Learning Studio • <span class="font-mono-code">train.py + deep.py + vision.py + nlp.py</span>
+        </p>
       </div>
     </div>
 
-    <!-- Dataset Controls, Target Picker & Run Podium Button -->
+    <!-- Mode Switcher (Tabular CSV | Vision ZIP | NLP Text) + Upload + Target + Run Podium -->
     <div class="flex flex-wrap items-center gap-2">
-      <!-- Connection Badge -->
-      <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-[#DFD6C0] text-[11px] font-mono-code text-stone-600">
+      <!-- Connection Status Pill -->
+      <div class="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-[#DFD6C0] text-[11px] font-mono-code text-stone-600 shadow-2xs">
         <span id="api-status-dot" class="w-2 h-2 rounded-full bg-rose-500"></span>
         <span id="api-status-label">Checking Backend...</span>
       </div>
 
-      <!-- Active Uploaded File Pill -->
-      <div id="active-file-pill" class="px-3 py-1.5 rounded-xl bg-stone-100 border border-[#DFD6C0] text-xs font-mono-code font-bold text-stone-600 flex items-center gap-1.5">
-        <span>📄</span>
-        <span id="active-file-pill-text">No CSV uploaded</span>
+      <!-- Task Modality Selector -->
+      <div class="flex items-center bg-[#EFE8D5] p-0.5 rounded-xl border border-[#DFD6C0] text-[11px] font-extrabold">
+        <button id="mode-btn-tabular" onclick="switchTaskModality('tabular')" class="px-2.5 py-1 rounded-lg bg-white text-stone-900 shadow-2xs transition cursor-pointer flex items-center gap-1">
+          <span>📊</span><span>Tabular</span>
+        </button>
+        <button id="mode-btn-text" onclick="switchTaskModality('text')" class="px-2.5 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition cursor-pointer flex items-center gap-1">
+          <span>📝</span><span>NLP Text</span>
+        </button>
+        <button id="mode-btn-image" onclick="switchTaskModality('image')" class="px-2.5 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition cursor-pointer flex items-center gap-1">
+          <span>🖼️</span><span>Vision ZIP</span>
+        </button>
       </div>
 
-      <!-- Upload Custom CSV -->
-      <label class="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 border-2 border-amber-400 text-xs font-extrabold text-stone-900 cursor-pointer transition flex items-center gap-1.5 shadow-2xs">
+      <!-- Active Uploaded File Pill -->
+      <div id="active-file-pill" class="px-2.5 py-1.5 rounded-xl bg-stone-100 border border-[#DFD6C0] text-xs font-mono-code font-bold text-stone-600 flex items-center gap-1.5">
+        <span>📄</span>
+        <span id="active-file-pill-text" class="max-w-[140px] truncate">No file uploaded</span>
+      </div>
+
+      <!-- Upload CSV Button (Tabular & NLP Mode) -->
+      <label id="csv-upload-label" class="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 border-2 border-amber-400 text-xs font-extrabold text-stone-900 cursor-pointer transition flex items-center gap-1.5 shadow-2xs">
         <span>📂</span>
         <span id="upload-filename-label">Upload CSV</span>
         <input id="csv-file-input" type="file" accept=".csv" class="hidden" />
       </label>
 
-      <!-- Target Column Selector (Changing target ONLY updates insights, does NOT auto-start training) -->
-      <div class="flex items-center gap-1 bg-white px-2.5 py-1 rounded-xl border border-[#DFD6C0]">
-        <span class="text-[10px] font-mono-code uppercase text-stone-400 font-bold">Target:</span>
+      <!-- Upload ZIP Button (Vision Image Mode) -->
+      <label id="zip-upload-label" class="hidden px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-400 text-xs font-extrabold text-indigo-950 cursor-pointer transition items-center gap-1.5 shadow-2xs">
+        <span>🗜️</span>
+        <span id="upload-zip-label">Upload Images (.zip)</span>
+        <input id="zip-file-input" type="file" accept=".zip" class="hidden" />
+      </label>
+
+      <!-- NLP Text Column Selector (Only shown in NLP Text Mode) -->
+      <div id="text-column-wrap" class="hidden items-center gap-1 bg-white px-2.5 py-1 rounded-xl border border-indigo-300">
+        <span class="text-[10px] font-mono-code uppercase text-indigo-500 font-bold">Text Col:</span>
+        <select id="text-column-select" class="text-xs font-mono-code font-bold text-stone-900 bg-transparent focus:outline-none cursor-pointer">
+          <option value="">-- upload CSV --</option>
+        </select>
+      </div>
+
+      <!-- Target / Label Column Selector (Shown in Tabular & NLP Mode) -->
+      <div id="target-column-wrap" class="flex items-center gap-1 bg-white px-2.5 py-1 rounded-xl border border-[#DFD6C0]">
+        <span id="target-select-prefix" class="text-[10px] font-mono-code uppercase text-stone-400 font-bold">Target:</span>
         <select id="target-column-select" class="text-xs font-mono-code font-bold text-stone-900 bg-transparent focus:outline-none cursor-pointer">
           <option value="">-- upload CSV first --</option>
         </select>
       </div>
 
-      <!-- Run Podium Button (Training ONLY starts when this button is clicked) -->
-      <button id="btn-run-podium" class="px-4 py-1.5 rounded-xl bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-stone-950 font-extrabold text-xs tracking-tight transition flex items-center gap-1.5 shadow-sm border border-amber-600 cursor-pointer">
+      <!-- Run Podium Button -->
+      <button id="btn-run-podium" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-95 text-stone-950 font-black text-xs tracking-tight transition flex items-center gap-1.5 shadow-sm border border-amber-700 cursor-pointer">
         <span>🚀 Run Podium</span>
       </button>
 
@@ -142,42 +180,55 @@
   <!-- MAIN WORKSPACE AREA -->
   <main class="flex-1 w-full max-w-[1440px] mx-auto px-4 py-1.5 flex flex-col">
 
-    <!-- 2D Pixel Office + Right Inspector Sidebar -->
     <div id="classic-workspace" class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
 
-      <!-- LEFT 8 COLS: Munder Difflin Pixel Office Monitor Frame -->
+      <!-- LEFT 8 COLS: Multi-Floor Pixel Office Monitor Frame -->
       <div class="lg:col-span-8 flex flex-col gap-2.5">
-        <div class="relative rounded-2xl bg-[#26292E] p-2.5 shadow-xl border-4 border-[#1B1E22]">
+        <div class="relative rounded-2xl bg-[#202329] p-2.5 shadow-xl border-4 border-[#15171B]">
 
-          <!-- Top HUD Overlay Inside Frame -->
+          <!-- Top HUD + Elevator Floor Switcher Bar -->
           <div class="flex flex-wrap items-center justify-between gap-2 pb-2 px-1 text-[11px] font-mono-code text-stone-300">
-            <div class="flex items-center gap-2.5">
+            <!-- Left: Floor Switcher Pills + Active Dataset Info -->
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- Elevator Floor Switcher -->
+              <div class="flex items-center bg-[#121418] p-0.5 rounded-lg border border-stone-700">
+                <button id="btn-floor-1" onclick="switchFloor(1)" class="px-2.5 py-1 rounded-md bg-amber-400 text-stone-950 font-extrabold text-[10px] flex items-center gap-1 transition cursor-pointer shadow-xs">
+                  <span>🏢 1F: ML Bullpen</span>
+                  <span id="badge-1f-count" class="px-1 rounded bg-stone-900/20 text-[9px]">5</span>
+                </button>
+                <button id="btn-floor-2" onclick="switchFloor(2)" class="px-2.5 py-1 rounded-md text-indigo-300 hover:text-white font-extrabold text-[10px] flex items-center gap-1 transition cursor-pointer">
+                  <span>🧠 2F: Deep Learning Lab</span>
+                  <span id="badge-2f-count" class="px-1 rounded bg-indigo-500/30 text-[9px]">3</span>
+                </button>
+              </div>
+
+              <span class="text-stone-600">|</span>
               <span class="flex items-center gap-1.5">
                 <span id="hud-status-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
-                <strong class="text-white" id="hud-dataset-name">Awaiting CSV upload...</strong>
+                <strong class="text-white truncate max-w-[150px]" id="hud-dataset-name">Awaiting dataset...</strong>
               </span>
-              <span class="text-stone-400">|</span>
-              <span>Target: <strong class="text-amber-300" id="hud-target-col">—</strong></span>
-              <span class="text-stone-400 hidden sm:inline">|</span>
-              <span class="hidden sm:inline">Rows: <strong class="text-white" id="hud-rows-count">0</strong></span>
+              <span class="text-stone-500 hidden sm:inline">|</span>
+              <span class="hidden sm:inline">Target: <strong class="text-amber-300" id="hud-target-col">—</strong></span>
+              <span class="text-stone-500 hidden md:inline">|</span>
+              <span class="hidden md:inline">Samples: <strong class="text-white" id="hud-rows-count">0</strong></span>
             </div>
 
-            <!-- Floor Choreography & Interactive Modals Controls -->
+            <!-- Right: Floor Choreography & Interactive Modals Controls -->
             <div class="flex flex-wrap items-center gap-1.5">
-              <button id="btn-open-xai" class="px-2 py-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/50 text-indigo-200 text-[10px] font-bold transition cursor-pointer" title="Feature Importance & Confusion Matrix">
+              <button id="btn-open-xai" class="px-2 py-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/50 text-indigo-200 text-[10px] font-bold transition cursor-pointer" title="Feature Importance & Evaluation Metrics">
                 📊 XAI Board
               </button>
-              <button id="btn-open-sandbox" class="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-[10px] font-bold transition cursor-pointer" title="Test Winner on Single Row">
+              <button id="btn-open-sandbox" class="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-[10px] font-bold transition cursor-pointer" title="Test Winner on Single Row / Image / Text">
                 🔮 Test Winner
               </button>
               <button id="btn-standup" class="px-2 py-0.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-100 text-[10px] font-bold transition cursor-pointer">
                 📋 Standup
               </button>
               <button id="btn-queue-lounge" class="px-2 py-0.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-100 text-[10px] font-bold transition cursor-pointer">
-                ☕ Coffee
+                ☕ Coffee Lounge
               </button>
               <button id="btn-desks" class="px-2 py-0.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-100 text-[10px] font-bold transition cursor-pointer">
-                💻 Desks
+                💻 Workstations
               </button>
               <button id="btn-podium-ceremony" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 text-[10px] font-bold transition cursor-pointer">
                 🏆 Podium Ramp
@@ -186,12 +237,30 @@
           </div>
 
           <!-- Canvas Container + Crisp DOM Speech Bubble & Nameplate Overlay -->
-          <div class="relative w-full h-[540px] rounded-xl overflow-hidden border-2 border-[#16181D] bg-[#84948B]">
+          <div class="relative w-full h-[540px] rounded-xl overflow-hidden border-2 border-[#14161A] bg-[#84948B]">
             <canvas id="officeCanvas" class="w-full h-full block cursor-pointer"></canvas>
             <!-- Vector DOM Layer for 100% Crisp Speech Bubbles & Dark Nameplates -->
             <div id="office-dom-overlay" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
 
-            <!-- Real-Time Live System Wall Clock (Bottom-Left Munder Difflin Style) -->
+            <!-- Interactive Floating Elevator Control Panel (Super Visible & Accessible) -->
+            <div class="absolute top-3 left-3 z-20 flex items-center gap-2 bg-[#18181B]/95 border-2 border-amber-400/90 px-2.5 py-1.5 rounded-xl shadow-xl">
+              <div class="flex flex-col items-center justify-center px-1.5 py-0.5 rounded bg-stone-900 border border-stone-700">
+                <span class="text-[8px] font-mono-code uppercase text-stone-400 font-bold leading-none">LIFT</span>
+                <span id="lift-led-display" class="text-xs font-mono-code font-black text-amber-400 leading-tight mt-0.5">1F</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <button id="lift-widget-1f" onclick="switchFloor(1)" class="px-2.5 py-1 rounded-lg bg-amber-400 text-stone-950 font-mono-code font-black text-[11px] flex items-center gap-1 cursor-pointer transition shadow-xs">
+                  <span>1F</span>
+                  <span class="text-[9px] font-bold">ML</span>
+                </button>
+                <button id="lift-widget-2f" onclick="switchFloor(2)" class="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-400/50 font-mono-code font-black text-[11px] flex items-center gap-1 cursor-pointer transition">
+                  <span>2F</span>
+                  <span class="text-[9px] font-bold">DL ▲</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Real-Time Live System Wall Clock (Bottom-Left) -->
             <div class="absolute bottom-2.5 left-2.5 pointer-events-none flex items-center gap-2.5 bg-[#FAF6EC]/95 border-2 border-stone-800 px-3 py-1.5 rounded-xl text-stone-900 shadow-lg">
               <span id="clock-indicator-dot" class="w-3.5 h-3.5 rounded-full bg-amber-500 border border-stone-800 shrink-0"></span>
               <div>
@@ -205,21 +274,21 @@
               </div>
             </div>
 
-            <!-- Bottom-Right Pipeline Pill Badge -->
-            <div class="absolute bottom-2.5 right-2.5 pointer-events-none flex items-center gap-1.5 bg-[#1E2024]/90 border border-stone-600/80 px-2.5 py-1 rounded-md text-[10px] font-mono-code text-stone-200 shadow-md">
-              <span>⚡</span>
-              <span id="pipeline-mode-pill">pipeline • sklearn-gridsearch</span>
+            <!-- Bottom-Right Active Floor & Engine Pill Badge -->
+            <div class="absolute bottom-2.5 right-2.5 pointer-events-none flex items-center gap-1.5 bg-[#181A20]/95 border border-stone-600/80 px-3 py-1 rounded-lg text-[10px] font-mono-code text-stone-200 shadow-md">
+              <span id="floor-pill-icon">🏢</span>
+              <span id="pipeline-mode-pill">1F Classical ML • sklearn + PyTorch</span>
             </div>
 
             <!-- Toast Notification Pill -->
-            <div id="office-toast" class="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-none transition-all duration-300 opacity-0 translate-y-2 bg-stone-900/95 text-white border border-amber-400/50 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg z-30">
+            <div id="office-toast" class="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-none transition-all duration-300 opacity-0 translate-y-2 bg-stone-900/95 text-white border border-amber-400/60 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg z-30">
               <span id="office-toast-icon">⚡</span>
               <span id="office-toast-text">Ready</span>
             </div>
           </div>
         </div>
 
-        <!-- Bottom Character Dock -->
+        <!-- Bottom Character Dock (Shows All Active Agents Across Both Floors with Floor Tag) -->
         <div id="bottom-character-dock" class="flex items-center gap-2 overflow-x-auto pb-1"></div>
       </div>
 
@@ -242,10 +311,10 @@
           </button>
         </div>
 
-        <!-- TAB 1: MODELS / EMPLOYEES LIST -->
+        <!-- TAB 1: MODELS / EMPLOYEES LIST (1F + 2F) -->
         <div id="tab-content-agents" class="flex-1 flex flex-col p-3 overflow-hidden">
-          <div class="mb-2.5">
-            <input id="agent-search-input" type="text" placeholder="Search ML models, alias, or task..."
+          <div class="mb-2.5 flex items-center gap-1.5">
+            <input id="agent-search-input" type="text" placeholder="Search 1F ML or 2F DL models (ANN, CNN, RNN)..."
                    class="w-full px-3 py-1.5 rounded-xl bg-white border border-[#DFD6C0] text-xs text-stone-800 focus:outline-none focus:border-amber-500 font-mono-code" />
           </div>
           <div id="sidebar-agents-list" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
@@ -254,7 +323,7 @@
         <!-- TAB 2: PODIUM LEADERBOARD -->
         <div id="tab-content-leaderboard" class="hidden flex-1 flex flex-col p-3 overflow-y-auto space-y-3">
           <div id="podium-demo-banner" class="hidden px-3 py-1.5 rounded-lg bg-amber-100 border border-amber-400 text-amber-950 text-[11px] font-mono-code font-bold text-center">
-            ⚠️ DEMO MODE: SIMULATED SCORES (Backend Offline)
+            ⚠️ DEMO MODE: CLIENT-SIDE PREVIEW (FastAPI Offline)
           </div>
 
           <div id="podium-top3-cards" class="grid grid-cols-3 gap-2"></div>
@@ -270,15 +339,15 @@
                 <span>⬇️</span> <span id="download-joblib-btn-label">Download .joblib</span>
               </button>
               <button onclick="copyWinnerSklearnCode()" class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-stone-900 border border-amber-400 font-bold text-[11px] flex items-center justify-center gap-1 transition cursor-pointer shadow-2xs">
-                <span>📋</span> <span id="copy-code-btn-label">Copy Sklearn Code</span>
+                <span>📋</span> <span id="copy-code-btn-label">Copy Pipeline Code</span>
               </button>
             </div>
             <div class="grid grid-cols-2 gap-1.5">
               <button onclick="openPredictionSandboxModal()" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center justify-center gap-1 transition cursor-pointer">
-                <span>🔮</span> <span>Test Single Row</span>
+                <span>🔮</span> <span>Live Predict (/predict)</span>
               </button>
               <button onclick="openXaiModal()" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center justify-center gap-1 transition cursor-pointer">
-                <span>📊</span> <span>Feature Importance</span>
+                <span>📊</span> <span>Metrics &amp; Schema</span>
               </button>
             </div>
           </div>
@@ -286,7 +355,7 @@
           <!-- Leaderboard Ranked Rows -->
           <div class="bg-white rounded-xl border border-[#DFD6C0] overflow-hidden">
             <div class="px-3 py-2 bg-[#EFE8D5] border-b border-[#DFD6C0] text-[10px] font-mono-code font-bold uppercase text-stone-600 flex justify-between">
-              <span>Rank &amp; Model (Best Params)</span>
+              <span>Rank &amp; Agent (Floor / Params)</span>
               <span>Score / Time</span>
             </div>
             <div id="leaderboard-rows-container" class="divide-y divide-stone-100"></div>
@@ -295,8 +364,8 @@
           <!-- Head-to-Head Model Comparison Card (Accuracy vs. Speed Tradeoff) -->
           <div id="head-to-head-card" class="hidden bg-white rounded-xl border border-[#DFD6C0] p-3 space-y-2.5 shadow-2xs">
             <div class="flex items-center justify-between">
-              <span class="text-[10px] font-mono-code font-extrabold uppercase text-stone-500">⚔️ Head-to-Head: Accuracy vs. Speed</span>
-              <span class="text-[10px] font-mono-code text-amber-700 font-bold">Tradeoff Analysis</span>
+              <span class="text-[10px] font-mono-code font-extrabold uppercase text-stone-500">⚔️ Head-to-Head: 1F ML vs 2F DL</span>
+              <span class="text-[10px] font-mono-code text-amber-700 font-bold">Accuracy vs. Speed</span>
             </div>
             <div class="grid grid-cols-2 gap-2">
               <select id="compare-model-a" onchange="renderHeadToHeadComparison()" class="text-[11px] font-mono-code font-bold bg-[#FAF6EC] border border-[#DFD6C0] rounded-lg px-2 py-1 text-stone-800"></select>
@@ -318,7 +387,7 @@
           </div>
           <div id="insights-warnings-box" class="space-y-1.5"></div>
           <div id="insights-stats-grid" class="grid grid-cols-2 gap-2"></div>
-          <div class="bg-white p-2.5 rounded-xl border border-[#DFD6C0]">
+          <div class="bg-white p-2.5 rounded-xl border border-[#DFD6C0]" id="insights-dropped-box">
             <div class="text-[10px] font-bold uppercase text-stone-400 mb-1.5">Dropped Noise Columns (drop_noise_columns)</div>
             <div id="insights-dropped-cols" class="flex flex-wrap gap-1.5"></div>
           </div>
@@ -331,8 +400,8 @@
             <span class="text-stone-500 font-semibold">Selected:</span>
             <strong id="footer-selected-model" class="text-stone-900 ml-1">Forrest (Random Forest)</strong>
           </div>
-          <div id="footer-selected-params" class="font-mono-code text-[10px] text-amber-900 bg-amber-200/70 px-2 py-0.5 rounded truncate max-w-[160px]">
-            Ready
+          <div id="footer-selected-params" class="font-mono-code text-[10px] text-amber-900 bg-amber-200/70 px-2 py-0.5 rounded truncate max-w-[170px]">
+            1F • Ready
           </div>
         </div>
       </div>
@@ -340,69 +409,88 @@
 
   </main>
 
-  <!-- LIVE "TEST A SINGLE ROW" PREDICTION SANDBOX MODAL -->
+  <!-- LIVE PREDICTION SANDBOX MODAL (Supports /predict, /predict-text, and /predict-image) -->
   <div id="sandbox-modal" class="fixed inset-0 bg-stone-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
     <div class="bg-[#FAF6EC] border-2 border-stone-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-[#DFD6C0] pb-3">
         <div class="flex items-center gap-2">
           <span class="text-xl">🔮</span>
           <div>
-            <h3 class="font-extrabold text-sm text-stone-900">Live Prediction Sandbox — Test Winner</h3>
-            <p id="sandbox-winner-subtitle" class="text-[11px] font-mono-code text-stone-500">Dispatch a test row to the #1 Podium Winner</p>
+            <h3 class="font-extrabold text-sm text-stone-900">Live Winner Inference Sandbox</h3>
+            <p id="sandbox-winner-subtitle" class="text-[11px] font-mono-code text-stone-500">Powered by predict.py • Real-time inference</p>
           </div>
         </div>
         <button onclick="closePredictionSandboxModal()" class="w-7 h-7 rounded-lg bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold text-xs cursor-pointer">✕</button>
       </div>
 
-      <div id="sandbox-inputs-grid" class="grid grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-1"></div>
+      <!-- Dynamic Body: Tabular Inputs OR NLP Textarea OR Image File Picker -->
+      <div id="sandbox-dynamic-body" class="space-y-3">
+        <div id="sandbox-inputs-grid" class="grid grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-1"></div>
 
-      <div id="sandbox-result-banner" class="hidden p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 flex items-center justify-between">
-        <div>
-          <div class="text-[10px] font-mono-code uppercase font-bold text-emerald-700">Predicted Output (Demo Estimate)</div>
-          <div id="sandbox-result-value" class="font-mono-code font-black text-base text-emerald-900 mt-0.5">—</div>
+        <!-- NLP Text Prediction Box -->
+        <div id="sandbox-text-wrap" class="hidden space-y-1.5">
+          <label class="block text-xs font-mono-code font-bold text-stone-700">Enter a sentence to classify (/predict-text):</label>
+          <textarea id="sandbox-text-input" rows="3" placeholder="Type a sample review, message, or sentence..."
+                    class="w-full p-2.5 rounded-xl bg-white border border-[#DFD6C0] text-xs font-mono-code text-stone-900 focus:outline-none focus:border-indigo-500"></textarea>
         </div>
-        <div class="text-right">
-          <div class="text-[10px] font-mono-code text-emerald-700">Winner CV Score</div>
-          <div id="sandbox-result-conf" class="font-mono-code font-bold text-xs text-emerald-800">—</div>
+
+        <!-- Vision Image Prediction Box -->
+        <div id="sandbox-image-wrap" class="hidden space-y-2">
+          <label class="block text-xs font-mono-code font-bold text-stone-700">Upload a test image to classify (/predict-image):</label>
+          <input id="sandbox-image-input" type="file" accept="image/*"
+                 class="w-full text-xs font-mono-code text-stone-700 bg-white p-2 rounded-xl border border-[#DFD6C0]" />
         </div>
       </div>
 
+      <!-- Prediction Result Banner + Class Probabilities -->
+      <div id="sandbox-result-banner" class="hidden p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 space-y-2">
+        <div class="flex items-center justify-between">
+          <div>
+            <div id="sandbox-result-label" class="text-[10px] font-mono-code uppercase font-bold text-emerald-700">Model Prediction</div>
+            <div id="sandbox-result-value" class="font-mono-code font-black text-base text-emerald-900 mt-0.5">—</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] font-mono-code text-emerald-700">Winner Score</div>
+            <div id="sandbox-result-conf" class="font-mono-code font-bold text-xs text-emerald-800">—</div>
+          </div>
+        </div>
+        <div id="sandbox-probabilities-bars" class="space-y-1 pt-1 border-t border-emerald-200/80"></div>
+      </div>
+
       <div class="flex items-center justify-end gap-2 pt-2 border-t border-[#DFD6C0]">
-        <button onclick="fillRandomSandboxRow()" class="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-100 border border-[#DFD6C0] text-xs font-bold text-stone-700 cursor-pointer">
-          🎲 Randomize Row
+        <button id="btn-sandbox-randomize" onclick="fillRandomSandboxRow()" class="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-100 border border-[#DFD6C0] text-xs font-bold text-stone-700 cursor-pointer">
+          🎲 Randomize Inputs
         </button>
         <button onclick="runLiveRowPrediction()" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-sm">
-          <span>✉️ Dispatch Envelope &amp; Predict</span>
+          <span>✉️ Dispatch Packet &amp; Predict</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- VISUAL FEATURE IMPORTANCE & CONFUSION MATRIX (XAI BOARD) MODAL -->
+  <!-- VISUAL FEATURE SCHEMA & EVALUATION METRICS (XAI BOARD) MODAL -->
   <div id="xai-modal" class="fixed inset-0 bg-stone-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
     <div class="bg-[#FAF6EC] border-2 border-stone-800 rounded-2xl max-w-2xl w-full p-5 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-[#DFD6C0] pb-3">
         <div class="flex items-center gap-2">
           <span class="text-xl">📊</span>
           <div>
-            <h3 class="font-extrabold text-sm text-stone-900">Office Corkboard — Explainable AI (XAI) &amp; Diagnostics</h3>
-            <p id="xai-subtitle" class="text-[11px] font-mono-code text-stone-500">Top Feature Importances &amp; Validation Matrix</p>
+            <h3 class="font-extrabold text-sm text-stone-900">Office Corkboard — Model Diagnostics &amp; Feature Schema</h3>
+            <p id="xai-subtitle" class="text-[11px] font-mono-code text-stone-500">Holdout Test Split Metrics &amp; Active Features</p>
           </div>
         </div>
         <button onclick="closeXaiModal()" class="w-7 h-7 rounded-lg bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold text-xs cursor-pointer">✕</button>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Left: Top 5 Feature Importances -->
         <div class="bg-white rounded-xl p-3.5 border border-[#DFD6C0] space-y-2.5">
           <div class="text-xs font-extrabold text-stone-800 flex items-center justify-between">
-            <span>🌲 Feature Columns Overview</span>
-            <span class="text-[10px] font-mono-code text-stone-400">Active Inputs</span>
+            <span>🌲 Pipeline Input Schema</span>
+            <span class="text-[10px] font-mono-code text-stone-400">Active Features</span>
           </div>
-          <div id="xai-feature-bars" class="space-y-2"></div>
+          <div id="xai-feature-bars" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
         </div>
 
-        <!-- Right: Confusion Matrix / Residual Diagnostics -->
         <div class="bg-white rounded-xl p-3.5 border border-[#DFD6C0] space-y-2.5">
           <div class="text-xs font-extrabold text-stone-800 flex items-center justify-between">
             <span id="xai-matrix-title">🎯 Holdout Evaluation Metrics</span>
@@ -453,6 +541,10 @@
         } catch (_) {}
       }
       click() { this.tone(620, 0.04, 'triangle', 0.03); }
+      elevatorDing() {
+        this.tone(784, 0.07, 'sine', 0.035);
+        setTimeout(() => this.tone(1046, 0.14, 'sine', 0.04), 80);
+      }
       dispatch() {
         this.tone(440, 0.06, 'square', 0.025);
         setTimeout(() => this.tone(587, 0.07, 'square', 0.025), 65);
@@ -474,21 +566,27 @@
     const sfx = new RetroSoundEngine();
 
     /********************************************************************
-     * 2. THE 5 ML MODEL EMPLOYEES + GRID-MASTER (BOSS) — THEME A NAMES
+     * 2. MULTI-FLOOR AGENT ROSTER:
+     *    - FLOOR 1 (Classical ML): Ned (KNN), Forrest (RF), Bayes (NB), Lin (Linear/Ridge), Victor (SVM/SVR)
+     *    - FLOOR 2 (Deep Learning): Anna-ANN (ANN), Connie-CNN (CNN), Rory-RNN (RNN), Lexi-TextCNN (TextCNN)
      ********************************************************************/
+    let currentFloor = 1; // 1 = Classical ML Bullpen, 2 = Deep Learning Lab
+    let taskModality = 'tabular'; // 'tabular' | 'text' | 'image'
+
     const AGENT_ROSTER = window.AGENT_ROSTER = [
+      // BOSS (Appears on both 1F & 2F Command Console)
       {
         id: 'boss',
         alias: 'Grid-Master',
-        displayRole: 'Boss',
+        displayRole: 'Boss Orchestrator',
         isBoss: true,
+        floor: 0, // 0 = Present on both floors via Command Desk
         modelName: 'BossLog Orchestrator',
         classModel: 'BossLog Orchestrator',
         regModel: 'BossLog Orchestrator',
         status: 'idle',
-        current_task: 'Awaiting CSV dataset',
-        bubble: 'upload CSV to start',
-        bubbleTimer: 200,
+        current_task: 'Awaiting dataset',
+        bubble: 'upload CSV or ZIP to start',
         skinColor: '#F3C6A0',
         hairColor: '#3B281E',
         suitColor: '#2B2D38',
@@ -496,29 +594,25 @@
         tieColor: '#B91C1C',
         auraColor: 'rgba(129, 140, 248, 0.28)',
         accessory: 'boss',
-        x: 96, y: 120, targetX: 96, targetY: 120,
-        facing: 'front'
+        x: 96, y: 120, targetX: 96, targetY: 120
       },
+
+      // ================= FLOOR 1: CLASSICAL SCIKIT-LEARN MODELS =================
       {
         id: 'knn',
-        alias: 'Ned',
+        alias: 'Ned-KNN',
         displayRole: 'K-Nearest Neighbors',
         isBoss: false,
+        floor: 1,
         deskIdx: 0,
         modelName: 'KNN',
         classModel: 'KNN',
         regModel: 'KNN',
         gridDesc: 'n_neighbors: [3, 5, 9]',
-        trainingsCount: 9,
         status: 'idle',
-        score: null,
-        metrics: null,
-        seconds: null,
-        best_params: null,
-        error: null,
-        current_task: 'Ready at desk',
+        score: null, metrics: null, seconds: null, best_params: null, error: null,
+        current_task: 'Ready at 1F desk',
         bubble: 'awaiting dataset',
-        bubbleTimer: 160,
         skinColor: '#F1C29B',
         hairColor: '#523624',
         suitColor: '#2E3440',
@@ -526,29 +620,23 @@
         tieColor: '#475569',
         auraColor: 'rgba(56, 189, 248, 0.22)',
         accessory: 'none',
-        x: 105, y: 332, targetX: 105, targetY: 332,
-        facing: 'back'
+        x: 105, y: 332, targetX: 105, targetY: 332
       },
       {
         id: 'rf',
-        alias: 'Forrest',
+        alias: 'Forrest-RF',
         displayRole: 'Random Forest',
         isBoss: false,
+        floor: 1,
         deskIdx: 1,
         modelName: 'Random Forest',
         classModel: 'Random Forest',
         regModel: 'Random Forest',
         gridDesc: 'n_estimators: [100, 200], max_depth: [None, 10]',
-        trainingsCount: 12,
         status: 'idle',
-        score: null,
-        metrics: null,
-        seconds: null,
-        best_params: null,
-        error: null,
-        current_task: 'Ready at desk',
+        score: null, metrics: null, seconds: null, best_params: null, error: null,
+        current_task: 'Ready at 1F desk',
         bubble: '< reading train.py',
-        bubbleTimer: 200,
         skinColor: '#F0C097',
         hairColor: '#4A3520',
         suitColor: '#A16207',
@@ -556,29 +644,23 @@
         tieColor: '#713F12',
         auraColor: 'rgba(250, 204, 21, 0.26)',
         accessory: 'glasses_hat',
-        x: 235, y: 332, targetX: 235, targetY: 332,
-        facing: 'back'
+        x: 225, y: 332, targetX: 225, targetY: 332
       },
       {
         id: 'nb',
-        alias: 'Bayes',
+        alias: 'Bayes-NB',
         displayRole: 'Naive Bayes',
         isBoss: false,
+        floor: 1,
         deskIdx: 2,
         modelName: 'Naive Bayes',
         classModel: 'Naive Bayes',
         regModel: 'Naive Bayes',
         gridDesc: 'var_smoothing: [1e-9, 1e-8, 1e-7]',
-        trainingsCount: 9,
         status: 'idle',
-        score: null,
-        metrics: null,
-        seconds: null,
-        best_params: null,
-        error: null,
-        current_task: 'Ready at desk',
+        score: null, metrics: null, seconds: null, best_params: null, error: null,
+        current_task: 'Ready at 1F desk',
         bubble: 'awaiting dataset',
-        bubbleTimer: 180,
         skinColor: '#F3C5A2',
         hairColor: '#65A30D',
         suitColor: '#EA580C',
@@ -586,29 +668,23 @@
         tieColor: '#9A3412',
         auraColor: 'rgba(251, 146, 60, 0.24)',
         accessory: 'visor',
-        x: 365, y: 332, targetX: 365, targetY: 332,
-        facing: 'back'
+        x: 345, y: 332, targetX: 345, targetY: 332
       },
       {
         id: 'linear',
-        alias: 'Lin',
-        displayRole: 'Linear & Ridge',
+        alias: 'Lin-Reg',
+        displayRole: 'Logistic & Ridge',
         isBoss: false,
+        floor: 1,
         deskIdx: 3,
         modelName: 'Logistic Regression',
         classModel: 'Logistic Regression',
         regModel: 'Ridge Regression',
         gridDesc: 'C / alpha: [0.1, 1, 10]',
-        trainingsCount: 9,
         status: 'idle',
-        score: null,
-        metrics: null,
-        seconds: null,
-        best_params: null,
-        error: null,
-        current_task: 'Ready at desk',
+        score: null, metrics: null, seconds: null, best_params: null, error: null,
+        current_task: 'Ready at 1F desk',
         bubble: '< checking pipeline',
-        bubbleTimer: 190,
         skinColor: '#F7CEAD',
         hairColor: '#D4A359',
         suitColor: '#1E293B',
@@ -616,29 +692,23 @@
         tieColor: '#334155',
         auraColor: 'rgba(168, 85, 247, 0.22)',
         accessory: 'cap',
-        x: 495, y: 332, targetX: 495, targetY: 332,
-        facing: 'back'
+        x: 465, y: 332, targetX: 465, targetY: 332
       },
       {
         id: 'svm',
-        alias: 'Victor',
+        alias: 'Victor-SVM',
         displayRole: 'Support Vector',
         isBoss: false,
+        floor: 1,
         deskIdx: 4,
         modelName: 'SVM',
         classModel: 'SVM',
         regModel: 'SVR',
         gridDesc: 'C: [0.1, 1, 10], kernel: [rbf, linear]',
-        trainingsCount: 18,
         status: 'idle',
-        score: null,
-        metrics: null,
-        seconds: null,
-        best_params: null,
-        error: null,
-        current_task: 'Ready at desk',
+        score: null, metrics: null, seconds: null, best_params: null, error: null,
+        current_task: 'Ready at 1F desk',
         bubble: 'awaiting dataset',
-        bubbleTimer: 170,
         skinColor: '#DDA782',
         hairColor: '#171717',
         suitColor: '#312E81',
@@ -646,30 +716,135 @@
         tieColor: '#1E1B4B',
         auraColor: 'rgba(52, 211, 153, 0.24)',
         accessory: 'hat',
-        x: 625, y: 332, targetX: 625, targetY: 332,
-        facing: 'back'
+        x: 585, y: 332, targetX: 585, targetY: 332
+      },
+
+      // ================= FLOOR 2: DEEP LEARNING NEURAL AGENTS =================
+      {
+        id: 'ann',
+        alias: 'Anna-ANN',
+        displayRole: 'Artificial Neural Net (MLP)',
+        isBoss: false,
+        floor: 2,
+        deskIdx: 0,
+        modelName: 'ANN',
+        classModel: 'ANN',
+        regModel: 'ANN',
+        gridDesc: 'hidden_layers: [(64,), (64,32)], alpha: [1e-4, 1e-2]',
+        status: 'idle',
+        score: null, metrics: null, seconds: null, best_params: null, error: null,
+        current_task: 'Ready at 2F GPU pod',
+        bubble: '⚡ ReLU + Dropout(0.1)',
+        skinColor: '#F5CBA7',
+        hairColor: '#5B21B6',
+        suitColor: '#4C1D95',
+        shirtColor: '#FFFFFF',
+        tieColor: '#EC4899',
+        auraColor: 'rgba(236, 72, 153, 0.32)',
+        accessory: 'none',
+        x: 130, y: 332, targetX: 130, targetY: 332
+      },
+      {
+        id: 'cnn',
+        alias: 'Connie-CNN',
+        displayRole: 'Convolutional Neural Net (PyTorch)',
+        isBoss: false,
+        floor: 2,
+        deskIdx: 1,
+        modelName: 'CNN',
+        classModel: 'CNN',
+        regModel: 'CNN',
+        gridDesc: 'Conv1d/Conv2d • lr: [0.003, 0.01], epochs: 40',
+        status: 'idle',
+        score: null, metrics: null, seconds: null, best_params: null, error: null,
+        current_task: 'Ready at 2F GPU pod',
+        bubble: '🧠 Conv kernels ready',
+        skinColor: '#F1C29B',
+        hairColor: '#1E3A8A',
+        suitColor: '#0F172A',
+        shirtColor: '#FFFFFF',
+        tieColor: '#06B6D4',
+        auraColor: 'rgba(6, 182, 212, 0.34)',
+        accessory: 'cap',
+        x: 280, y: 332, targetX: 280, targetY: 332
+      },
+      {
+        id: 'rnn',
+        alias: 'Rory-RNN',
+        displayRole: 'Recurrent GRU Network (PyTorch)',
+        isBoss: false,
+        floor: 2,
+        deskIdx: 2,
+        modelName: 'RNN',
+        classModel: 'RNN',
+        regModel: 'RNN',
+        gridDesc: 'PyTorch GRU(32/64) • lr: [0.003, 0.01]',
+        status: 'idle',
+        score: null, metrics: null, seconds: null, best_params: null, error: null,
+        current_task: 'Ready at 2F GPU pod',
+        bubble: '🔄 GRU hidden state ready',
+        skinColor: '#E5B887',
+        hairColor: '#065F46',
+        suitColor: '#1E1B4B',
+        shirtColor: '#FFFFFF',
+        tieColor: '#10B981',
+        auraColor: 'rgba(16, 185, 129, 0.34)',
+        accessory: 'glasses_hat',
+        x: 430, y: 332, targetX: 430, targetY: 332
+      },
+      {
+        id: 'textcnn',
+        alias: 'Lexi-TextCNN',
+        displayRole: 'Multi-Kernel NLP ConvNet',
+        isBoss: false,
+        floor: 2,
+        deskIdx: 3,
+        modelName: 'TextCNN',
+        classModel: 'TextCNN',
+        regModel: 'TextCNN',
+        gridDesc: 'Embedding(64) + Conv1d(k=3,4,5) • lr: [0.003, 0.01]',
+        status: 'idle',
+        score: null, metrics: null, seconds: null, best_params: null, error: null,
+        current_task: 'Ready for NLP Text runs',
+        bubble: '📝 n-gram filters idle',
+        skinColor: '#F7CEAD',
+        hairColor: '#78350F',
+        suitColor: '#311042',
+        shirtColor: '#FFFFFF',
+        tieColor: '#F59E0B',
+        auraColor: 'rgba(245, 158, 11, 0.32)',
+        accessory: 'hat',
+        x: 565, y: 332, targetX: 565, targetY: 332
       }
     ];
 
-    const AMBIENT_BUBBLES = [
+    const AMBIENT_BUBBLES_1F = [
       '< reading train.py',
-      '< updating the todo board',
-      '< searching for skill files',
-      '> fetching docs',
-      '> ready for GridSearchCV',
-      '@ heading back to desk',
-      '< checking SimpleImputer',
-      'awaiting CSV'
+      '< relaxing on lounge sofa',
+      '< sipping espresso ☕',
+      '> checking GridSearchCV',
+      '@ heading to coffee bar',
+      '< reviewing SimpleImputer'
+    ];
+
+    const AMBIENT_BUBBLES_2F = [
+      '⚡ warming up PyTorch tensors',
+      '🧠 checking Adam optimizer',
+      '< grabbing cold brew ☕',
+      '< chilling in neural lounge',
+      '> monitoring validation loss',
+      '🔄 zero_grad() + backward()'
     ];
 
     /********************************************************************
-     * 3. CLEAN INITIAL DATASET STATE + FLYING ENVELOPE PACKETS STATE
+     * 3. DATASET STATE, STEAM PARTICLES & FLYING FILE TRANSFER PACKETS
      ********************************************************************/
     let currentDataset = {
       dataset_id: null,
       filename: null,
       problem_type: 'classification',
       target: null,
+      text_column: null,
       columns: [],
       rows: 0,
       numeric_features: 0,
@@ -679,16 +854,18 @@
       missing: [],
       target_info: null,
       warnings: [],
+      classes: null,
       isLiveServerDataset: false,
       isSimulatedDemo: false,
       rawParsedRows: null,
       rawHeaders: null
     };
 
-    let selectedAgent = AGENT_ROSTER[2]; // Default Forrest (Random Forest)
+    let selectedAgent = AGENT_ROSTER[2]; // Default Forrest-RF
     let isTrainingRun = false;
     let globalTick = 0;
     let flyingPackets = [];
+    let coffeeSteamParticles = [];
     let bossLogs = [];
     let liveFastApiAvailable = false;
     let apiBaseUrl = window.location.origin;
@@ -700,7 +877,7 @@
     let ch = 540;
 
     /********************************************************************
-     * 4. HI-DPI CANVAS RESIZE & OFFICE GEOMETRY COORDINATES
+     * 4. HI-DPI CANVAS RESIZE & FLOOR GEOMETRY
      ********************************************************************/
     function resizeOfficeCanvas() {
       if (!canvas || !ctx) return;
@@ -725,30 +902,39 @@
     function getOfficeZones() {
       return {
         bossDesk: { x: 96, y: 120 },
-        confTable: { x: 255, y: 92, w: 220, h: 64 },
+        elevatorDoor: { x: 470, y: 18, w: 112, h: 74 },
+        confTable: { x: 225, y: 96, w: 205, h: 64 },
         podiumCenter: { x: cw - 150, y: 145 },
-        queueLounge: { x: cw - 185, y: 445 },
+        seatingSofa: { x: 65, y: 425, w: 195, h: 85 },
+        coffeeBar: { x: cw - 255, y: 445, w: 215, h: 70 },
         corkboard: { x: 225, y: 220, w: 120, h: 30 }
       };
     }
 
-    function getDeskPosition(deskIdx) {
-      const leftMargin = 95;
-      const usableWidth = Math.min(540, cw - 310);
-      const stepX = usableWidth / 4;
+    function getDeskPosition(deskIdx, floorNum = 1) {
+      const leftMargin = floorNum === 2 ? 115 : 95;
+      const count = floorNum === 2 ? 4 : 5;
+      const usableWidth = Math.min(520, cw - 295);
+      const stepX = usableWidth / Math.max(1, count - 1);
       return {
         x: Math.round(leftMargin + deskIdx * stepX),
-        y: 345
+        y: 336
       };
     }
 
-    function getQueuePosition(idx) {
-      const baseX = cw - 205;
-      const baseY = 435;
-      return {
-        x: baseX + (idx % 3) * 44,
-        y: baseY + Math.floor(idx / 3) * 34
-      };
+    function getCommonLoungePosition(idx) {
+      // Spread queued/resting agents across the Plush Seating Area & Common Coffee Bar
+      const spots = [
+        { x: 105, y: 448 }, // Left sofa seat 1
+        { x: 148, y: 448 }, // Left sofa seat 2
+        { x: 192, y: 448 }, // Left sofa seat 3
+        { x: 232, y: 476 }, // Armchair seat
+        { x: cw - 210, y: 445 }, // Coffee counter spot 1
+        { x: cw - 160, y: 445 }, // Coffee counter spot 2
+        { x: cw - 110, y: 448 }, // High-top table spot
+        { x: 155, y: 488 }  // Coffee rug spot
+      ];
+      return spots[idx % spots.length];
     }
 
     function getPodiumPosition(rank) {
@@ -757,7 +943,7 @@
       if (rank === 1) return { x: cx, y: cy - 12 };
       if (rank === 2) return { x: cx - 54, y: cy + 4 };
       if (rank === 3) return { x: cx + 54, y: cy + 8 };
-      return { x: cx - 45 + (rank - 4) * 90, y: cy + 54 };
+      return { x: cx - 55 + ((rank - 4) * 45), y: cy + 54 };
     }
 
     function repositionAllDesksOnResize() {
@@ -765,27 +951,147 @@
         if (ag.isBoss) {
           ag.x = 96; ag.y = 120;
           ag.targetX = 96; ag.targetY = 120;
-          ag.facing = 'front';
         } else {
-          const dp = getDeskPosition(ag.deskIdx);
+          const dp = getDeskPosition(ag.deskIdx, ag.floor);
           ag.x = dp.x; ag.y = dp.y;
           ag.targetX = dp.x; ag.targetY = dp.y;
-          ag.facing = 'back';
         }
       });
     }
 
     /********************************************************************
-     * 5. FLYING ENVELOPES & REAL-TIME LIVE SYSTEM CLOCK
+     * 5. FLOOR SWITCHER (1F CLASSICAL ML <-> 2F DEEP LEARNING LAB)
+     ********************************************************************/
+    window.switchFloor = function(floorNum) {
+      if (currentFloor === floorNum) return;
+      currentFloor = floorNum;
+      elevatorDoorAnim = 18; // Trigger sliding elevator door animation on floor arrival!
+      sfx.elevatorDing();
+
+      const btn1 = document.getElementById('btn-floor-1');
+      const btn2 = document.getElementById('btn-floor-2');
+      const liftLed = document.getElementById('lift-led-display');
+      const liftW1 = document.getElementById('lift-widget-1f');
+      const liftW2 = document.getElementById('lift-widget-2f');
+      const pill = document.getElementById('pipeline-mode-pill');
+      const icon = document.getElementById('floor-pill-icon');
+
+      if (floorNum === 1) {
+        btn1.className = 'px-2.5 py-1 rounded-md bg-amber-400 text-stone-950 font-extrabold text-[10px] flex items-center gap-1 transition cursor-pointer shadow-xs';
+        btn2.className = 'px-2.5 py-1 rounded-md text-indigo-300 hover:text-white font-extrabold text-[10px] flex items-center gap-1 transition cursor-pointer';
+        if (liftLed) {
+          liftLed.textContent = '1F';
+          liftLed.className = 'text-xs font-mono-code font-black text-amber-400 leading-tight mt-0.5';
+        }
+        if (liftW1) liftW1.className = 'px-2.5 py-1 rounded-lg bg-amber-400 text-stone-950 font-mono-code font-black text-[11px] flex items-center gap-1 cursor-pointer transition shadow-xs';
+        if (liftW2) liftW2.className = 'px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-400/50 font-mono-code font-black text-[11px] flex items-center gap-1 cursor-pointer transition';
+        if (pill) pill.textContent = '1F Classical ML Bullpen • Scikit-Learn GridSearchCV';
+        if (icon) icon.textContent = '🏢';
+        showOfficeToast('🛗 Lift arrived at 1F: Classical ML Bullpen', '🏢');
+      } else {
+        btn2.className = 'px-2.5 py-1 rounded-md bg-indigo-500 text-white font-extrabold text-[10px] flex items-center gap-1 transition cursor-pointer shadow-xs';
+        btn1.className = 'px-2.5 py-1 rounded-md text-stone-300 hover:text-white font-extrabold text-[10px] flex items-center gap-1 transition cursor-pointer';
+        if (liftLed) {
+          liftLed.textContent = '2F';
+          liftLed.className = 'text-xs font-mono-code font-black text-cyan-400 leading-tight mt-0.5';
+        }
+        if (liftW2) liftW2.className = 'px-2.5 py-1 rounded-lg bg-indigo-500 text-white font-mono-code font-black text-[11px] flex items-center gap-1 cursor-pointer transition shadow-xs';
+        if (liftW1) liftW1.className = 'px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-amber-500 text-amber-200 hover:text-stone-950 border border-amber-400/50 font-mono-code font-black text-[11px] flex items-center gap-1 cursor-pointer transition';
+        if (pill) pill.textContent = '2F Deep Learning Lab • PyTorch ANN / CNN / RNN / TextCNN';
+        if (icon) icon.textContent = '🧠';
+        showOfficeToast('🛗 Lift arrived at 2F: Deep Learning GPU Lab', '🧠');
+      }
+
+      renderBottomCharacterDock();
+      renderSidebarAgentsList();
+    };
+
+    /********************************************************************
+     * 6. TASK MODALITY SWITCHER (TABULAR CSV | NLP TEXT | VISION ZIP)
+     ********************************************************************/
+    window.switchTaskModality = function(mode) {
+      taskModality = mode;
+      sfx.click();
+
+      const bTab = document.getElementById('mode-btn-tabular');
+      const bTxt = document.getElementById('mode-btn-text');
+      const bImg = document.getElementById('mode-btn-image');
+
+      [bTab, bTxt, bImg].forEach(b => {
+        if (b) b.className = 'px-2.5 py-1 rounded-lg text-stone-600 hover:text-stone-900 transition cursor-pointer flex items-center gap-1';
+      });
+
+      const csvLabel = document.getElementById('csv-upload-label');
+      const zipLabel = document.getElementById('zip-upload-label');
+      const txtWrap = document.getElementById('text-column-wrap');
+      const tgtWrap = document.getElementById('target-column-wrap');
+      const tgtPrefix = document.getElementById('target-select-prefix');
+
+      if (mode === 'tabular') {
+        bTab.className = 'px-2.5 py-1 rounded-lg bg-white text-stone-900 shadow-2xs transition cursor-pointer flex items-center gap-1';
+        csvLabel.classList.remove('hidden'); csvLabel.classList.add('flex');
+        zipLabel.classList.add('hidden'); zipLabel.classList.remove('flex');
+        txtWrap.classList.add('hidden'); txtWrap.classList.remove('flex');
+        tgtWrap.classList.remove('hidden'); tgtWrap.classList.add('flex');
+        tgtPrefix.textContent = 'Target:';
+        showOfficeToast('Mode: Tabular CSV (Trains 1F ML + 2F ANN/CNN/RNN)', '📊');
+      } else if (mode === 'text') {
+        bTxt.className = 'px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-2xs transition cursor-pointer flex items-center gap-1';
+        csvLabel.classList.remove('hidden'); csvLabel.classList.add('flex');
+        zipLabel.classList.add('hidden'); zipLabel.classList.remove('flex');
+        txtWrap.classList.remove('hidden'); txtWrap.classList.add('flex');
+        tgtWrap.classList.remove('hidden'); tgtWrap.classList.add('flex');
+        tgtPrefix.textContent = 'Label Col:';
+        switchFloor(2);
+        showOfficeToast('Mode: NLP Text Classification (2F: Anna-ANN, Rory-RNN, Lexi-TextCNN)', '📝');
+      } else if (mode === 'image') {
+        bImg.className = 'px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-2xs transition cursor-pointer flex items-center gap-1';
+        csvLabel.classList.add('hidden'); csvLabel.classList.remove('flex');
+        zipLabel.classList.remove('hidden'); zipLabel.classList.add('flex');
+        txtWrap.classList.add('hidden'); txtWrap.classList.remove('flex');
+        tgtWrap.classList.add('hidden'); tgtWrap.classList.remove('flex');
+        switchFloor(2);
+        showOfficeToast('Mode: Vision Image ZIP (2F: Anna-ANN & Connie-CNN)', '🖼️');
+      }
+
+      syncModelNamesWithProblemType();
+      renderBottomCharacterDock();
+      renderSidebarAgentsList();
+    };
+
+    /********************************************************************
+     * 7. BOSS FILE-TRANSFER ANIMATION & COFFEE STEAM PARTICLES
      ********************************************************************/
     function spawnFlyingPacket(fromX, fromY, toAgent, label = 'CSV', onArrive = null) {
+      // If target agent is on another floor and not currently visible, send packet to the Elevator shaft!
+      const elev = getOfficeZones().elevatorDoor;
+      const sameFloor = toAgent.isBoss || toAgent.floor === currentFloor;
       flyingPackets.push({
         x: fromX,
         y: fromY,
-        targetAgent: toAgent,
+        targetAgent: sameFloor ? toAgent : null,
+        toX: sameFloor ? toAgent.x : (elev.x + elev.w / 2),
+        toY: sameFloor ? toAgent.y : (elev.y + elev.h / 2),
         label,
-        progress: 0,
+        isDeepPacket: toAgent.floor === 2,
+        trail: [],
         onArrive
+      });
+    }
+
+    function dispatchBossFileTransferWave(tag = 'CSV') {
+      const boss = AGENT_ROSTER[0];
+      const workers = getActiveAgentsForProblem().filter(a => !a.isBoss);
+      boss.bubble = `📤 transferring ${ currentDataset.filename || tag }...`;
+
+      workers.forEach((w, idx) => {
+        setTimeout(() => {
+          spawnFlyingPacket(boss.x + 12, boss.y - 8, w, tag, () => {
+            if (w.status === 'queued' || w.status === 'training') {
+              w.bubble = `📥 received ${tag} batch`;
+            }
+          });
+        }, idx * 110);
       });
     }
 
@@ -798,32 +1104,69 @@
         const dy = ty - pkt.y;
         const dist = Math.hypot(dx, dy);
 
-        if (dist < 10) {
+        pkt.trail.push({ x: pkt.x, y: pkt.y });
+        if (pkt.trail.length > 6) pkt.trail.shift();
+
+        if (dist < 11) {
           if (pkt.onArrive) pkt.onArrive();
           flyingPackets.splice(i, 1);
           continue;
         }
 
-        pkt.x += (dx / dist) * 6.5;
-        pkt.y += (dy / dist) * 6.5;
+        pkt.x += (dx / dist) * 7.2;
+        pkt.y += (dy / dist) * 7.2;
+
+        // Draw glowing trail dots
+        pkt.trail.forEach((pt, idx) => {
+          ctx.fillStyle = pkt.isDeepPacket
+            ? `rgba(56, 189, 248, ${(idx + 1) * 0.12})`
+            : `rgba(245, 158, 11, ${(idx + 1) * 0.12})`;
+          ctx.fillRect(Math.round(pt.x - 2), Math.round(pt.y - 2), 4, 4);
+        });
 
         const px = Math.round(pkt.x);
-        const py = Math.round(pkt.y + Math.sin(globalTick * 0.4) * 3);
+        const py = Math.round(pkt.y + Math.sin(globalTick * 0.45) * 3);
 
-        ctx.fillStyle = '#1E1B4B';
-        ctx.fillRect(px - 11, py - 8, 22, 15);
-        ctx.fillStyle = '#A855F7';
-        ctx.fillRect(px - 9, py - 6, 18, 11);
-        ctx.fillStyle = '#E9D5FF';
-        ctx.fillRect(px - 7, py - 4, 14, 3);
-        ctx.fillStyle = '#581C87';
-        ctx.fillRect(px - 5, py - 1, 10, 2);
+        // Pixel File Folder / Data Envelope
+        ctx.fillStyle = '#18181B';
+        ctx.fillRect(px - 13, py - 9, 26, 18);
+        ctx.fillStyle = pkt.isDeepPacket ? '#06B6D4' : '#F59E0B';
+        ctx.fillRect(px - 11, py - 7, 22, 14);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(px - 9, py - 5, 18, 4);
+        ctx.fillStyle = '#18181B';
+        ctx.font = '900 7.5px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(pkt.label.slice(0, 4), px, py + 5);
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function updateAndDrawCoffeeSteam() {
+      const cb = getOfficeZones().coffeeBar;
+      if (globalTick % 18 === 0) {
+        coffeeSteamParticles.push({
+          x: cb.x + 28 + (Math.random() * 8 - 4),
+          y: cb.y + 8,
+          alpha: 0.65
+        });
+      }
+      for (let i = coffeeSteamParticles.length - 1; i >= 0; i--) {
+        const p = coffeeSteamParticles[i];
+        p.y -= 0.45;
+        p.x += Math.sin(globalTick * 0.1 + i) * 0.2;
+        p.alpha -= 0.012;
+        if (p.alpha <= 0) {
+          coffeeSteamParticles.splice(i, 1);
+          continue;
+        }
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), 3, 3);
       }
     }
 
     function tickOfficeWallClock() {
       if (globalTick % 20 !== 0) return;
-
       const now = new Date();
       let hrs = now.getHours();
       const mins = now.getMinutes();
@@ -861,417 +1204,470 @@
     }
 
     /********************************************************************
-     * 6. PIXEL-ART ARCHITECTURAL FLOORPLAN, 3-PLANK DESKS & PODIUM RAMP
+     * 8. PIXEL-ART ARCHITECTURAL RENDERER (1F BULLPEN + 2F NEURAL LAB + COMMON LOUNGE)
      ********************************************************************/
-    function drawSteppedCross(x, y) {
-      ctx.fillStyle = '#73837A';
+    let elevatorDoorAnim = 0; // Animates sliding doors when switching floors
+
+    function drawSteppedCross(x, y, color) {
+      ctx.fillStyle = color;
       ctx.fillRect(x - 6, y - 2, 12, 4);
       ctx.fillRect(x - 2, y - 6, 4, 12);
     }
 
-    function draw3PlankComputerDesk(dx, dy, isOccupied, isBossDesk) {
-      const w = 78;
-      const h = 42;
-      const x = Math.round(dx - w / 2);
-      const y = Math.round(dy - h / 2);
+    function drawElevatorDoorOnWall() {
+      const el = getOfficeZones().elevatorDoor;
+      const isF2 = currentFloor === 2;
+      if (elevatorDoorAnim > 0) elevatorDoorAnim -= 0.6;
+      const slideOffset = Math.round(elevatorDoorAnim);
 
-      ctx.fillStyle = 'rgba(0,0,0,0.18)';
-      ctx.fillRect(x - 2, y + 6, w + 4, h + 4);
-
-      ctx.fillStyle = '#3E2E1E';
-      ctx.fillRect(x + 4, y + h - 2, 10, 9);
-      ctx.fillRect(x + w - 14, y + h - 2, 10, 9);
-      ctx.fillStyle = '#6E553B';
-      ctx.fillRect(x + 6, y + h - 2, 6, 7);
-      ctx.fillRect(x + w - 12, y + h - 2, 6, 7);
-
-      ctx.fillStyle = '#3B2B1D';
-      ctx.fillRect(x, y, w, h);
-
-      const plankColors = ['#8F7453', '#846A4B', '#7A6042'];
-      const plankH = 12;
-      for (let i = 0; i < 3; i++) {
-        ctx.fillStyle = plankColors[i];
-        ctx.fillRect(x + 2, y + 2 + i * (plankH + 1), w - 4, plankH);
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.fillRect(x + 2, y + 2 + i * (plankH + 1), w - 4, 2);
-      }
-      ctx.fillStyle = '#533E2B';
-      ctx.fillRect(x + 2, y + h - 4, w - 4, 2);
-
-      if (isBossDesk) {
-        ctx.fillStyle = '#27272A';
-        ctx.fillRect(x + 9, y + 12, 11, 13);
-        ctx.fillStyle = '#D4D4D8';
-        ctx.fillRect(x + 10, y + 13, 9, 6);
-        ctx.fillStyle = '#A16207';
-        ctx.fillRect(x + 10, y + 19, 9, 5);
-        ctx.fillStyle = '#D4D4D8';
-        ctx.fillRect(x + 7, y + 15, 2, 6);
-
-        ctx.fillStyle = '#27272A';
-        ctx.fillRect(x + 27, y + 10, 24, 18);
-        ctx.fillStyle = '#9CA3AF';
-        ctx.fillRect(x + 29, y + 12, 20, 14);
-        ctx.fillStyle = '#CBD5E1';
-        ctx.fillRect(x + 31, y + 15, 16, 8);
-
-        ctx.fillStyle = '#1E293B';
-        ctx.fillRect(x + 56, y + 10, 15, 18);
-        ctx.fillStyle = '#3B7A57';
-        ctx.fillRect(x + 58, y + 12, 11, 13);
-        ctx.fillStyle = '#E2E8F0';
-        ctx.fillRect(x + 60, y + 19, 7, 2);
-        ctx.fillRect(x + 58, y + 25, 11, 2);
-
-        const cx = dx - 11;
-        const cy = y + h + 11;
-        ctx.fillStyle = '#3B2B1D';
-        ctx.fillRect(cx, cy, 22, 20);
-        ctx.fillStyle = '#8C7252';
-        ctx.fillRect(cx + 2, cy + 2, 18, 15);
-        ctx.fillStyle = '#755D41';
-        ctx.fillRect(cx + 5, cy + 2, 12, 14);
-        return;
-      }
-
-      const mx = Math.round(dx - 16);
-      const my = y - 12;
-
-      ctx.fillStyle = '#3F3F46';
-      ctx.fillRect(dx - 5, my + 21, 10, 5);
-      ctx.fillStyle = '#71717A';
-      ctx.fillRect(dx - 8, my + 24, 16, 3);
-
-      ctx.fillStyle = '#27272A';
-      ctx.fillRect(mx, my, 32, 22);
-      ctx.fillStyle = '#9CA3AF';
-      ctx.fillRect(mx + 1, my + 1, 30, 20);
-
-      if (isOccupied) {
-        ctx.fillStyle = '#5383EC';
-        ctx.fillRect(mx + 3, my + 3, 26, 16);
-        ctx.fillStyle = '#93C5FD';
-        ctx.fillRect(mx + 5, my + 5, 10, 2);
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(mx + 5, my + 14, 16, 2);
-      } else {
-        ctx.fillStyle = '#27272A';
-        ctx.fillRect(mx + 3, my + 3, 26, 16);
-        ctx.fillStyle = '#3F3F46';
-        ctx.fillRect(mx + 5, my + 5, 8, 2);
-      }
-
-      ctx.fillStyle = '#52525B';
-      ctx.fillRect(dx - 11, y + 17, 18, 7);
-      ctx.fillStyle = '#D4D4D8';
-      ctx.fillRect(dx - 10, y + 18, 16, 5);
-      ctx.fillStyle = '#D4D4D8';
-      ctx.fillRect(dx + 11, y + 18, 4, 6);
-
-      if (!isOccupied) {
-        const cx = dx - 11;
-        const cy = y + h + 6;
-        ctx.fillStyle = '#3B2B1D';
-        ctx.fillRect(cx, cy, 22, 18);
-        ctx.fillStyle = '#8C7252';
-        ctx.fillRect(cx + 2, cy + 2, 18, 14);
-      }
-    }
-
-    function drawPodiumRampStage() {
-      const px = cw - 220;
-      const py = 58;
-      const pw = 165;
-      const ph = 128;
-
-      ctx.fillStyle = '#4C1D24';
-      ctx.fillRect(px, py + 24, pw, ph - 18);
-      ctx.fillStyle = '#7F1D1D';
-      ctx.fillRect(px + 3, py + 27, pw - 6, ph - 24);
-      ctx.fillStyle = '#F59E0B';
-      ctx.fillRect(px + 3, py + 27, pw - 6, 2);
-      ctx.fillRect(px + 3, py + ph + 1, pw - 6, 2);
-
+      // 1. Red & Gold Welcome Lobby Carpet in front of the Lift
       ctx.fillStyle = '#18181B';
-      ctx.fillRect(px + 25, py - 18, 115, 18);
-      ctx.fillStyle = '#F59E0B';
-      ctx.font = '800 9.5px "JetBrains Mono", monospace';
+      ctx.fillRect(el.x - 4, el.y + el.h, el.w + 8, 28);
+      ctx.fillStyle = isF2 ? '#312E81' : '#991B1B';
+      ctx.fillRect(el.x - 2, el.y + el.h + 2, el.w + 4, 24);
+      ctx.fillStyle = isF2 ? '#38BDF8' : '#FBBF24';
+      ctx.fillRect(el.x + 2, el.y + el.h + 4, el.w - 4, 2);
+      ctx.fillRect(el.x + 2, el.y + el.h + 22, el.w - 4, 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 8.5px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('🏆 PODIUM RAMP', px + 83, py - 6);
+      ctx.fillText(isF2 ? '▼ CLICK LIFT FOR 1F ML' : '▲ CLICK LIFT FOR 2F DL', el.x + el.w / 2, el.y + el.h + 16);
 
-      const s2x = px + 14;
-      const s2y = py + 66;
+      // 2. Heavy Gold/Steel Elevator Outer Portal Arch
+      ctx.fillStyle = '#090D16';
+      ctx.fillRect(el.x - 4, el.y - 12, el.w + 8, el.h + 14);
+      ctx.fillStyle = isF2 ? '#38BDF8' : '#F59E0B';
+      ctx.fillRect(el.x - 2, el.y - 10, el.w + 4, el.h + 10);
       ctx.fillStyle = '#1E293B';
-      ctx.fillRect(s2x, s2y, 44, 36);
-      ctx.fillStyle = '#94A3B8';
-      ctx.fillRect(s2x + 2, s2y + 2, 40, 10);
+      ctx.fillRect(el.x + 2, el.y - 6, el.w - 4, el.h + 4);
+
+      // 3. Top Digital LED Header Marquee ("🛗 LIFT • 1F / 2F")
+      ctx.fillStyle = '#090D16';
+      ctx.fillRect(el.x + 6, el.y - 4, el.w - 12, 16);
+      // Glowing Floor Dial Indicators
+      ctx.fillStyle = !isF2 ? '#FBBF24' : '#475569';
+      ctx.font = '900 9.5px "JetBrains Mono", monospace';
+      ctx.fillText('1F', el.x + 24, el.y + 8);
       ctx.fillStyle = '#64748B';
-      ctx.fillRect(s2x + 2, s2y + 12, 40, 22);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '900 10px "JetBrains Mono", monospace';
-      ctx.fillText('2ND', s2x + 22, s2y + 26);
+      ctx.fillText('⟷', el.x + el.w / 2, el.y + 8);
+      ctx.fillStyle = isF2 ? '#38BDF8' : '#475569';
+      ctx.fillText('2F', el.x + el.w - 24, el.y + 8);
 
-      const s1x = px + 60;
-      const s1y = py + 50;
-      ctx.fillStyle = '#451A03';
-      ctx.fillRect(s1x, s1y, 46, 52);
-      ctx.fillStyle = '#FDE047';
-      ctx.fillRect(s1x + 2, s1y + 2, 42, 12);
-      ctx.fillStyle = '#EAB308';
-      ctx.fillRect(s1x + 2, s1y + 14, 42, 36);
-      ctx.fillStyle = '#1C1917';
-      ctx.font = '900 11px "JetBrains Mono", monospace';
-      ctx.fillText('1ST', s1x + 23, s1y + 35);
+      // 4. Elevator Shaft Interior (Visible when doors slide open!)
+      const doorX = el.x + 10;
+      const doorY = el.y + 15;
+      const doorW = el.w - 34;
+      const doorH = el.h - 17;
+      ctx.fillStyle = isF2 ? '#0EA5E9' : '#FDE68A';
+      ctx.fillRect(doorX, doorY, doorW, doorH);
+      // Interior handrail
+      ctx.fillStyle = '#B45309';
+      ctx.fillRect(doorX + 6, doorY + 26, doorW - 12, 4);
 
-      const s3x = px + 108;
-      const s3y = py + 72;
-      ctx.fillStyle = '#431407';
-      ctx.fillRect(s3x, s3y, 44, 30);
-      ctx.fillStyle = '#FDBA74';
-      ctx.fillRect(s3x + 2, s3y + 2, 40, 9);
-      ctx.fillStyle = '#EA580C';
-      ctx.fillRect(s3x + 2, s3y + 11, 40, 17);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '900 10px "JetBrains Mono", monospace';
-      ctx.fillText('3RD', s3x + 22, s3y + 23);
+      // 5. Left & Right Brushed Steel Sliding Doors with Glass Viewing Windows
+      const halfW = Math.floor(doorW / 2);
+      const curDoorW = Math.max(6, halfW - slideOffset);
+
+      // Left sliding door
+      ctx.fillStyle = '#94A3B8';
+      ctx.fillRect(doorX, doorY, curDoorW, doorH);
+      ctx.fillStyle = '#CBD5E1';
+      ctx.fillRect(doorX + 2, doorY + 2, Math.max(2, curDoorW - 4), doorH - 4);
+      // Glass window on left door
+      if (curDoorW > 14) {
+        ctx.fillStyle = '#0F172A';
+        ctx.fillRect(doorX + 6, doorY + 6, curDoorW - 12, 16);
+        ctx.fillStyle = isF2 ? '#38BDF8' : '#FDE047';
+        ctx.fillRect(doorX + 8, doorY + 8, curDoorW - 16, 12);
+      }
+
+      // Right sliding door
+      const rightDoorX = doorX + doorW - curDoorW;
+      ctx.fillStyle = '#94A3B8';
+      ctx.fillRect(rightDoorX, doorY, curDoorW, doorH);
+      ctx.fillStyle = '#CBD5E1';
+      ctx.fillRect(rightDoorX + 2, doorY + 2, Math.max(2, curDoorW - 4), doorH - 4);
+      // Glass window on right door
+      if (curDoorW > 14) {
+        ctx.fillStyle = '#0F172A';
+        ctx.fillRect(rightDoorX + 6, doorY + 6, curDoorW - 12, 16);
+        ctx.fillStyle = isF2 ? '#38BDF8' : '#FDE047';
+        ctx.fillRect(rightDoorX + 8, doorY + 8, curDoorW - 16, 12);
+      }
+
+      // Center Door Seam
+      ctx.fillStyle = '#0F172A';
+      ctx.fillRect(doorX + halfW - 1, doorY, 2, doorH);
+
+      // 6. Right-Side Illuminated Up/Down Call Panel on the Elevator Frame
+      const callX = el.x + el.w - 20;
+      const callY = doorY + 10;
+      ctx.fillStyle = '#090D16';
+      ctx.fillRect(callX, callY, 14, 32);
+      const pulse = globalTick % 36 < 18;
+      // UP ▲ Button
+      ctx.fillStyle = !isF2 && pulse ? '#22C55E' : '#FBBF24';
+      ctx.fillRect(callX + 3, callY + 4, 8, 10);
+      // DOWN ▼ Button
+      ctx.fillStyle = isF2 && pulse ? '#38BDF8' : '#64748B';
+      ctx.fillRect(callX + 3, callY + 18, 8, 10);
+
       ctx.textAlign = 'left';
     }
 
+    function drawFloor2GpuServerRacks() {
+      // Glowing Tensor Core Server Racks on 2F Right Wall & Center
+      const sx = cw - 125;
+      const sy = 262;
+      ctx.fillStyle = '#090D16';
+      ctx.fillRect(sx, sy, 86, 108);
+      ctx.fillStyle = '#1E293B';
+      ctx.fillRect(sx + 4, sy + 4, 78, 100);
+
+      for (let r = 0; r < 6; r++) {
+        const ry = sy + 10 + r * 15;
+        ctx.fillStyle = '#0F172A';
+        ctx.fillRect(sx + 8, ry, 70, 11);
+        // Blinking Tensor LEDs
+        const pulse = (globalTick + r * 7) % 24 < 12;
+        ctx.fillStyle = pulse ? '#38BDF8' : '#6366F1';
+        ctx.fillRect(sx + 12, ry + 3, 6, 5);
+        ctx.fillStyle = isTrainingRun && pulse ? '#10B981' : '#EC4899';
+        ctx.fillRect(sx + 22, ry + 3, 6, 5);
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(sx + 34, ry + 4, 38, 3);
+      }
+
+      ctx.fillStyle = '#38BDF8';
+      ctx.font = '800 8px "JetBrains Mono", monospace';
+      ctx.fillText('⚡ PYTORCH GPU RACK', sx + 2, sy - 4);
+    }
+
+    function drawPodiumRampStage() {
+      const cx = cw - 140;
+      const cy = 128;
+
+      // Crimson Carpet Base with Gold Trim
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(cx - 88, cy - 36, 176, 108);
+      ctx.fillStyle = '#F59E0B';
+      ctx.fillRect(cx - 86, cy - 34, 172, 104);
+      ctx.fillStyle = '#7F1D1D';
+      ctx.fillRect(cx - 84, cy - 32, 168, 100);
+
+      // Header Banner: "🏆 PODIUM RAMP"
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(cx - 64, cy - 58, 128, 18);
+      ctx.fillStyle = '#FBBF24';
+      ctx.font = '900 9.5px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏆 PODIUM RAMP', cx, cy - 46);
+
+      // 2ND Place Silver Step (Left)
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(cx - 74, cy + 8, 46, 36);
+      ctx.fillStyle = '#CBD5E1';
+      ctx.fillRect(cx - 72, cy + 10, 42, 32);
+      ctx.fillStyle = '#1E293B';
+      ctx.font = '900 10px "JetBrains Mono", monospace';
+      ctx.fillText('2ND', cx - 51, cy + 30);
+
+      // 1ST Place Gold Step (Center, Tallest)
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(cx - 24, cy - 8, 48, 52);
+      ctx.fillStyle = '#FACC15';
+      ctx.fillRect(cx - 22, cy - 6, 44, 48);
+      ctx.fillStyle = '#FEF08A';
+      ctx.fillRect(cx - 22, cy - 6, 44, 6);
+      ctx.fillStyle = '#18181B';
+      ctx.font = '900 11px "JetBrains Mono", monospace';
+      ctx.fillText('1ST', cx, cy + 23);
+
+      // 3RD Place Bronze Step (Right)
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(cx + 28, cy + 14, 46, 30);
+      ctx.fillStyle = '#EA580C';
+      ctx.fillRect(cx + 30, cy + 16, 42, 26);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 10px "JetBrains Mono", monospace';
+      ctx.fillText('3RD', cx + 51, cy + 33);
+
+      ctx.textAlign = 'left';
+    }
+
+    function drawCommonSeatingAndCoffeeZone(isFloor2) {
+      // 1. LEFT SIDE: PLUSH COMMON SEATING LOUNGE
+      const sf = getOfficeZones().seatingSofa;
+
+      // Woven Lounge Area Rug
+      ctx.fillStyle = isFloor2 ? '#1E1B4B' : '#4A5D52';
+      ctx.fillRect(sf.x - 10, sf.y - 6, sf.w + 26, sf.h + 14);
+      ctx.fillStyle = isFloor2 ? '#312E81' : '#5E7468';
+      ctx.fillRect(sf.x - 6, sf.y - 2, sf.w + 18, sf.h + 6);
+
+      // L-Shaped Plush Couch
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(sf.x, sf.y, 148, 34);
+      ctx.fillStyle = isFloor2 ? '#4F46E5' : '#B45309';
+      ctx.fillRect(sf.x + 2, sf.y + 2, 144, 12); // Backrest
+      ctx.fillStyle = isFloor2 ? '#6366F1' : '#D97706';
+      ctx.fillRect(sf.x + 4, sf.y + 14, 44, 18); // Cushion 1
+      ctx.fillRect(sf.x + 52, sf.y + 14, 44, 18); // Cushion 2
+      ctx.fillRect(sf.x + 100, sf.y + 14, 44, 18); // Cushion 3
+
+      // Side Armchair
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(sf.x + 158, sf.y + 22, 34, 34);
+      ctx.fillStyle = isFloor2 ? '#4338CA' : '#92400E';
+      ctx.fillRect(sf.x + 160, sf.y + 24, 30, 30);
+
+      // Oak Coffee Table with Mugs & Laptops
+      ctx.fillStyle = '#271C15';
+      ctx.fillRect(sf.x + 30, sf.y + 46, 92, 30);
+      ctx.fillStyle = '#A16207';
+      ctx.fillRect(sf.x + 32, sf.y + 48, 88, 26);
+      // Coffee Mugs on Table
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(sf.x + 48, sf.y + 56, 7, 7);
+      ctx.fillStyle = '#38BDF8';
+      ctx.fillRect(sf.x + 88, sf.y + 56, 7, 7);
+
+      // Potted Monstera Plant beside Sofa
+      ctx.fillStyle = '#78350F';
+      ctx.fillRect(sf.x - 16, sf.y + 8, 14, 16);
+      ctx.fillStyle = '#15803D';
+      ctx.fillRect(sf.x - 20, sf.y - 4, 22, 14);
+      ctx.fillStyle = '#22C55E';
+      ctx.fillRect(sf.x - 16, sf.y - 8, 14, 10);
+
+      // Lounge Label
+      ctx.fillStyle = isFloor2 ? '#A5B4FC' : '#E2E8F0';
+      ctx.font = '800 8px "JetBrains Mono", monospace';
+      ctx.fillText('🛋️ SEATING LOUNGE', sf.x + 2, sf.y - 8);
+
+      // 2. RIGHT SIDE: ARTISAN COFFEE BAR & SKILL LIBRARY
+      const cb = getOfficeZones().coffeeBar;
+
+      // Checkered Kitchenette Floor Tiles
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 9; c++) {
+          ctx.fillStyle = (r + c) % 2 === 0
+            ? (isFloor2 ? '#1E293B' : '#CBD5E1')
+            : (isFloor2 ? '#0F172A' : '#94A3B8');
+          ctx.fillRect(cb.x + c * 22, cb.y + r * 20, 22, 20);
+        }
+      }
+
+      // Marble Espresso Bar Counter
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(cb.x + 4, cb.y + 12, 118, 36);
+      ctx.fillStyle = '#E2E8F0';
+      ctx.fillRect(cb.x + 6, cb.y + 14, 114, 12);
+      ctx.fillStyle = isFloor2 ? '#334155' : '#78716C';
+      ctx.fillRect(cb.x + 6, cb.y + 26, 114, 20);
+
+      // Dual-Group Italian Espresso Machine
+      ctx.fillStyle = '#DC2626';
+      ctx.fillRect(cb.x + 14, cb.y + 2, 26, 18);
+      ctx.fillStyle = '#FBBF24';
+      ctx.fillRect(cb.x + 18, cb.y + 6, 6, 6);
+      ctx.fillRect(cb.x + 28, cb.y + 6, 6, 6);
+
+      // Water Cooler Dispenser
+      ctx.fillStyle = '#E2E8F0';
+      ctx.fillRect(cb.x + 96, cb.y - 4, 18, 30);
+      ctx.fillStyle = '#38BDF8';
+      ctx.fillRect(cb.x + 98, cb.y - 16, 14, 14);
+
+      // Colorful ML & Deep Learning Bookshelf
+      const bx = cb.x + 132, by = cb.y - 2;
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(bx, by, 68, 52);
+      ctx.fillStyle = '#57534E';
+      ctx.fillRect(bx + 2, by + 2, 64, 48);
+      const bookColors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#A855F7', '#EC4899'];
+      for (let shelf = 0; shelf < 3; shelf++) {
+        const sy = by + 6 + shelf * 15;
+        ctx.fillStyle = '#292524';
+        ctx.fillRect(bx + 4, sy + 10, 60, 3);
+        for (let b = 0; b < 8; b++) {
+          ctx.fillStyle = bookColors[(shelf * 3 + b) % bookColors.length];
+          ctx.fillRect(bx + 6 + b * 7, sy, 5, 10);
+        }
+      }
+
+      ctx.fillStyle = isFloor2 ? '#38BDF8' : '#FEF08A';
+      ctx.font = '800 8px "JetBrains Mono", monospace';
+      ctx.fillText('☕ COFFEE BAR & DOCS', cb.x + 6, cb.y - 6);
+
+      updateAndDrawCoffeeSteam();
+    }
+
+    function draw3PlankComputerDesk(cx, cy, isOccupied, isBossDesk, isFloor2) {
+      const w = 78;
+      const h = 38;
+      const x = Math.round(cx - w / 2);
+      const y = Math.round(cy - h / 2);
+
+      // Desk Drop Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+      ctx.fillRect(x + 3, y + 5, w, h);
+
+      // Outer Frame
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(x, y, w, h);
+
+      // 3-Plank Wood (1F) or Carbon-Slate Cyber Desk (2F)
+      const p1 = isFloor2 && !isBossDesk ? '#1E293B' : '#A47E53';
+      const p2 = isFloor2 && !isBossDesk ? '#0F172A' : '#8F6B43';
+      const p3 = isFloor2 && !isBossDesk ? '#334155' : '#7B5B38';
+
+      ctx.fillStyle = p1;
+      ctx.fillRect(x + 2, y + 2, w - 4, 11);
+      ctx.fillStyle = p2;
+      ctx.fillRect(x + 2, y + 14, w - 4, 11);
+      ctx.fillStyle = p3;
+      ctx.fillRect(x + 2, y + 26, w - 4, 10);
+
+      // Monitor Stand & Dual/Widescreen Display
+      ctx.fillStyle = '#18181B';
+      ctx.fillRect(cx - 16, y - 10, 32, 18);
+      ctx.fillStyle = isOccupied
+        ? (isFloor2 ? '#06B6D4' : '#3B82F6')
+        : (isBossDesk ? '#F59E0B' : '#334155');
+      ctx.fillRect(cx - 14, y - 8, 28, 13);
+
+      // Screen Code Lines
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(cx - 11, y - 5, 14, 2);
+      ctx.fillRect(cx - 11, y - 1, 20, 2);
+    }
+
     function drawOfficeFloorplan() {
-      ctx.fillStyle = '#84948B';
+      const isFloor2 = currentFloor === 2;
+
+      // Base Floor Tile Palette (1F = Sage Green Munder Difflin, 2F = Deep Slate Cyber Indigo)
+      ctx.fillStyle = isFloor2 ? '#1E2436' : '#84948B';
       ctx.fillRect(0, 0, cw, ch);
 
       const tile = 48;
-      ctx.fillStyle = '#78887F';
-      for (let x = tile; x < cw; x += tile) {
-        ctx.fillRect(x, 0, 2, ch);
-      }
-      for (let y = tile; y < ch; y += tile) {
-        ctx.fillRect(0, y, cw, 2);
-      }
+      ctx.fillStyle = isFloor2 ? '#171C2B' : '#78887F';
+      for (let x = tile; x < cw; x += tile) ctx.fillRect(x, 0, 2, ch);
+      for (let y = tile; y < ch; y += tile) ctx.fillRect(0, y, cw, 2);
       for (let x = tile; x < cw; x += tile) {
         for (let y = tile; y < ch; y += tile) {
-          drawSteppedCross(x + 1, y + 1);
+          drawSteppedCross(x + 1, y + 1, isFloor2 ? '#283147' : '#73837A');
         }
       }
 
-      ctx.fillStyle = '#B0B5BA';
+      // Top Architecture Perimeter Wall
+      ctx.fillStyle = isFloor2 ? '#334155' : '#B0B5BA';
       ctx.fillRect(0, 0, cw, 8);
-      ctx.fillStyle = '#6C737A';
+      ctx.fillStyle = isFloor2 ? '#1E293B' : '#6C737A';
       ctx.fillRect(0, 8, cw, 24);
-      ctx.fillStyle = '#2D3238';
+      ctx.fillStyle = '#0F172A';
       ctx.fillRect(0, 32, cw, 4);
 
-      [290, 390].forEach((wx) => {
-        ctx.fillStyle = '#374151';
-        ctx.fillRect(wx, 10, 44, 18);
-        ctx.fillStyle = '#93C5FD';
-        ctx.fillRect(wx + 3, 13, 17, 12);
-        ctx.fillRect(wx + 24, 13, 17, 12);
-      });
+      // Interactive Elevator Door on Top Wall
+      drawElevatorDoorOnWall();
 
-      ctx.fillStyle = '#DC2626';
-      ctx.fillRect(122, 8, 22, 6);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(122, 14, 22, 14);
-      ctx.fillStyle = '#1F2937';
-      ctx.fillRect(125, 17, 4, 3);
-      ctx.fillRect(131, 17, 4, 3);
-      ctx.fillRect(137, 17, 4, 3);
-
-      ctx.fillStyle = '#B0B5BA';
+      // Interior Partition Walls & XAI Corkboards
+      ctx.fillStyle = isFloor2 ? '#475569' : '#B0B5BA';
       ctx.fillRect(0, 210, 170, 8);
-      ctx.fillStyle = '#6C737A';
+      ctx.fillStyle = isFloor2 ? '#1E293B' : '#6C737A';
       ctx.fillRect(0, 218, 170, 26);
-      ctx.fillStyle = '#2D3238';
-      ctx.fillRect(0, 244, 170, 4);
 
-      ctx.fillStyle = '#B0B5BA';
-      ctx.fillRect(210, 210, 340, 8);
-      ctx.fillStyle = '#6C737A';
-      ctx.fillRect(210, 218, 340, 32);
-      ctx.fillStyle = '#2D3238';
-      ctx.fillRect(210, 250, 340, 4);
+      ctx.fillStyle = isFloor2 ? '#475569' : '#B0B5BA';
+      ctx.fillRect(210, 210, 360, 8);
+      ctx.fillStyle = isFloor2 ? '#1E293B' : '#6C737A';
+      ctx.fillRect(210, 218, 360, 32);
 
+      // Interactive XAI Corkboard / Neural Loss Monitor Board on Partition Wall
       ctx.fillStyle = '#4B3621';
-      ctx.fillRect(228, 222, 54, 24);
-      ctx.fillStyle = '#DDA15E';
-      ctx.fillRect(230, 224, 50, 20);
-      ctx.fillStyle = '#EF4444';
-      ctx.fillRect(235, 228, 8, 8);
-      ctx.fillStyle = '#3B82F6';
-      ctx.fillRect(248, 229, 12, 10);
-
-      ctx.fillStyle = '#4B3621';
-      ctx.fillRect(288, 222, 54, 24);
-      ctx.fillStyle = '#E9C46A';
-      ctx.fillRect(290, 224, 50, 20);
+      ctx.fillRect(228, 222, 118, 24);
+      ctx.fillStyle = isFloor2 ? '#0F172A' : '#DDA15E';
+      ctx.fillRect(230, 224, 114, 20);
       ctx.fillStyle = '#10B981';
-      ctx.fillRect(296, 228, 18, 4);
-      ctx.fillStyle = '#6366F1';
-      ctx.fillRect(296, 234, 28, 4);
+      ctx.fillRect(236, 228, 24, 5);
+      ctx.fillStyle = '#38BDF8';
+      ctx.fillRect(266, 228, 34, 5);
+      ctx.fillStyle = '#F59E0B';
+      ctx.fillRect(236, 236, 52, 4);
 
-      const alarms = [{ x: 65, y: 230 }, { x: 255, y: 20 }, { x: 525, y: 20 }];
-      alarms.forEach(al => {
-        const grad = ctx.createRadialGradient(al.x, al.y, 2, al.x, al.y, 26);
-        grad.addColorStop(0, 'rgba(239, 68, 68, 0.28)');
-        grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(al.x, al.y, 26, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#EF4444';
-        ctx.fillRect(al.x - 3, al.y - 3, 6, 6);
-        ctx.fillStyle = '#FCA5A5';
-        ctx.fillRect(al.x - 1, al.y - 1, 2, 2);
-      });
-
+      // Conference Table (Top Center)
       const conf = getOfficeZones().confTable;
-      for (let i = 0; i < 4; i++) {
-        const chX = conf.x + 22 + i * 38;
-        ctx.fillStyle = '#3B1D2E';
-        ctx.fillRect(chX, conf.y - 14, 22, 14);
-        ctx.fillStyle = '#703853';
-        ctx.fillRect(chX + 2, conf.y - 12, 18, 10);
-
-        ctx.fillStyle = '#3B1D2E';
-        ctx.fillRect(chX, conf.y + conf.h, 22, 14);
-        ctx.fillStyle = '#703853';
-        ctx.fillRect(chX + 2, conf.y + conf.h + 2, 18, 10);
-      }
       ctx.fillStyle = '#3B2B1D';
       ctx.fillRect(conf.x, conf.y, conf.w, conf.h);
-      ctx.fillStyle = '#9C7A54';
+      ctx.fillStyle = isFloor2 ? '#1E293B' : '#9C7A54';
       ctx.fillRect(conf.x + 3, conf.y + 3, conf.w - 6, conf.h - 6);
-      ctx.fillStyle = '#8B6B47';
+      ctx.fillStyle = isFloor2 ? '#38BDF8' : '#8B6B47';
       ctx.fillRect(conf.x + 8, conf.y + 8, conf.w - 16, conf.h - 16);
-      ctx.fillStyle = '#15803D';
-      ctx.fillRect(conf.x + 14, conf.y + 22, 12, 12);
-      ctx.fillStyle = '#9CA3AF';
-      ctx.fillRect(conf.x + conf.w - 30, conf.y + 18, 16, 22);
 
+      // Podium Stage (Top Right)
       drawPodiumRampStage();
 
-      const kx = cw - 235;
-      const ky = 472;
-      ctx.fillStyle = '#27272A';
-      ctx.fillRect(kx, ky, 96, 36);
-      ctx.fillStyle = '#D6D3D1';
-      ctx.fillRect(kx + 2, ky + 2, 92, 18);
-      ctx.fillStyle = '#78716C';
-      ctx.fillRect(kx + 2, ky + 20, 92, 14);
-      ctx.fillStyle = '#3F3F46';
-      ctx.fillRect(kx + 6, ky - 12, 20, 22);
-      ctx.fillStyle = '#D4D4D8';
-      ctx.fillRect(kx + 8, ky - 10, 16, 6);
-      ctx.fillStyle = '#3B82F6';
-      ctx.fillRect(kx + 34, ky + 4, 8, 8);
-      ctx.fillStyle = '#F59E0B';
-      ctx.fillRect(kx + 46, ky + 4, 8, 8);
-      ctx.fillStyle = '#94A3B8';
-      ctx.fillRect(kx + 66, ky + 4, 22, 12);
-      ctx.fillStyle = '#CBD5E1';
-      ctx.fillRect(kx + 68, ky + 6, 18, 8);
+      // Common Seating Lounge & Coffee Bar (Bottom Left & Bottom Right)
+      drawCommonSeatingAndCoffeeZone(isFloor2);
 
-      ctx.fillStyle = '#27272A';
-      ctx.fillRect(kx + 100, ky - 20, 34, 56);
-      ctx.fillStyle = '#9CA3AF';
-      ctx.fillRect(kx + 102, ky - 18, 30, 22);
-      ctx.fillStyle = '#9CA3AF';
-      ctx.fillRect(kx + 102, ky + 6, 30, 28);
-      ctx.fillStyle = '#4B5563';
-      ctx.fillRect(kx + 127, ky - 12, 2, 12);
-      ctx.fillRect(kx + 127, ky + 10, 2, 14);
-
-      ctx.fillStyle = '#27272A';
-      ctx.fillRect(kx + 138, ky - 18, 52, 54);
-      ctx.fillStyle = '#78716C';
-      ctx.fillRect(kx + 140, ky - 16, 48, 50);
-      const shelfColors = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'];
-      for (let row = 0; row < 3; row++) {
-        ctx.fillStyle = '#27272A';
-        ctx.fillRect(kx + 142, ky - 12 + row * 15, 44, 11);
-        for (let b = 0; b < 6; b++) {
-          ctx.fillStyle = shelfColors[(row + b) % shelfColors.length];
-          ctx.fillRect(kx + 144 + b * 7, ky - 10 + row * 15, 5, 9);
-        }
+      // Floor-Specific Right Server / Tensor Hardware Room
+      if (isFloor2) {
+        drawFloor2GpuServerRacks();
+      } else {
+        const sx = cw - 120, sy = 278;
+        ctx.fillStyle = '#2D3732';
+        ctx.fillRect(sx, sy, 74, 88);
+        ctx.fillStyle = '#9AB399';
+        ctx.fillRect(sx + 2, sy + 2, 70, 84);
+        ctx.fillStyle = '#525E58';
+        ctx.fillRect(sx + 22, sy + 20, 36, 48);
       }
 
-      const sx = cw - 120;
-      const sy = 278;
-      ctx.fillStyle = '#2D3732';
-      ctx.fillRect(sx, sy, 74, 88);
-      ctx.fillStyle = '#9AB399';
-      ctx.fillRect(sx + 2, sy + 2, 70, 84);
-      ctx.fillStyle = '#525E58';
-      ctx.fillRect(sx + 22, sy + 20, 36, 48);
-      ctx.fillStyle = '#7A8B82';
-      ctx.fillRect(sx + 26, sy + 24, 28, 40);
+      // Boss Command Desk (Top Left)
+      draw3PlankComputerDesk(96, 145, false, true, isFloor2);
 
-      draw3PlankComputerDesk(96, 145, false, true);
-
-      for (let i = 0; i < 5; i++) {
-        const dp = getDeskPosition(i);
-        const emp = AGENT_ROSTER.find(a => !a.isBoss && a.deskIdx === i);
-        const isSeatedHere = emp && Math.hypot(emp.x - dp.x, emp.y - dp.y) < 12;
-        draw3PlankComputerDesk(dp.x, dp.y - 26, isSeatedHere, false);
-      }
+      // Employee Workstations for Current Floor
+      const floorWorkers = AGENT_ROSTER.filter(a => !a.isBoss && a.floor === currentFloor);
+      floorWorkers.forEach((emp) => {
+        const dp = getDeskPosition(emp.deskIdx, currentFloor);
+        const isSeatedHere = Math.hypot(emp.x - dp.x, emp.y - dp.y) < 14;
+        draw3PlankComputerDesk(dp.x, dp.y - 26, isSeatedHere, false, isFloor2);
+      });
     }
 
     /********************************************************************
-     * 7. HIGH-DEFINITION 16-BIT RPG CHARACTER SPRITE RENDERER
+     * 9. HIGH-DEFINITION 16-BIT CHARACTER SPRITE RENDERER
+     *    (Crisp front-facing faces with sclera + pupils + tie for Boss & all employees)
      ********************************************************************/
     function drawCharacterMiniature(ag, bobOffset) {
       const x = Math.round(ag.x);
       const y = Math.round(ag.y + bobOffset);
 
-      ctx.fillStyle = ag.status === 'failed' ? 'rgba(239, 68, 68, 0.28)' : (ag.auraColor || 'rgba(148, 163, 184, 0.22)');
+      ctx.fillStyle = ag.status === 'failed'
+        ? 'rgba(239, 68, 68, 0.30)'
+        : (ag.auraColor || 'rgba(148, 163, 184, 0.22)');
       ctx.beginPath();
       ctx.arc(x, y - 6, 23, 0, Math.PI * 2);
       ctx.fill();
 
-      const dp = !ag.isBoss ? getDeskPosition(ag.deskIdx) : null;
+      const dp = !ag.isBoss ? getDeskPosition(ag.deskIdx, ag.floor) : null;
       const isSeatedAtDesk = dp && Math.hypot(ag.x - dp.x, ag.y - dp.y) < 12;
 
+      // Draw wooden chair base under seated employee
       if (isSeatedAtDesk) {
         ctx.fillStyle = '#27272A';
-        ctx.fillRect(x - 10, y + 4, 20, 14);
-        ctx.fillStyle = '#786248';
-        ctx.fillRect(x - 8, y + 6, 16, 10);
+        ctx.fillRect(x - 10, y + 6, 20, 12);
+        ctx.fillStyle = ag.floor === 2 ? '#312E81' : '#786248';
+        ctx.fillRect(x - 8, y + 8, 16, 8);
+      } else {
+        const isWalking = Math.hypot(ag.targetX - ag.x, ag.targetY - ag.y) > 2;
+        const legSwing = isWalking ? Math.round(Math.sin(globalTick * 0.35) * 3) : 0;
 
         ctx.fillStyle = '#18181B';
-        ctx.fillRect(x - 11, y - 6, 22, 13);
-        ctx.fillStyle = ag.suitColor;
-        ctx.fillRect(x - 9, y - 4, 18, 10);
-
-        ctx.fillStyle = '#18181B';
-        ctx.fillRect(x - 11, y - 25, 22, 20);
-        ctx.fillStyle = ag.skinColor;
-        ctx.fillRect(x - 10, y - 16, 20, 6);
-        ctx.fillStyle = ag.hairColor;
-        ctx.fillRect(x - 9, y - 23, 18, 15);
-        ctx.fillStyle = 'rgba(0,0,0,0.18)';
-        ctx.fillRect(x - 5, y - 22, 2, 13);
-        ctx.fillRect(x + 3, y - 22, 2, 13);
-
-        drawCharacterHat(ag, x, y - 25);
-
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(x + 10, y - 13, 3, 3);
-        return;
+        ctx.fillRect(x - 8, y + 7, 7, 10 + legSwing);
+        ctx.fillRect(x + 1, y + 7, 7, 10 - legSwing);
       }
 
-      const isWalking = Math.hypot(ag.targetX - ag.x, ag.targetY - ag.y) > 2;
-      const legSwing = isWalking ? Math.round(Math.sin(globalTick * 0.35) * 3) : 0;
-
-      ctx.fillStyle = '#18181B';
-      ctx.fillRect(x - 8, y + 7, 7, 10 + legSwing);
-      ctx.fillRect(x + 1, y + 7, 7, 10 - legSwing);
-      ctx.fillStyle = '#1E293B';
-      ctx.fillRect(x - 6, y + 8, 4, 7 + legSwing);
-      ctx.fillRect(x + 2, y + 8, 4, 7 - legSwing);
-
+      // Crisp Suit Torso + White Shirt V-Neck + Tie (Always visible & sharp!)
       ctx.fillStyle = '#18181B';
       ctx.fillRect(x - 12, y - 6, 24, 15);
       ctx.fillStyle = ag.suitColor;
@@ -1282,43 +1678,29 @@
       ctx.fillStyle = ag.tieColor || '#B91C1C';
       ctx.fillRect(x - 2, y - 2, 4, 7);
 
-      ctx.fillStyle = ag.skinColor;
-      ctx.fillRect(x - 12, y + 4, 3, 4);
-      ctx.fillRect(x + 9, y + 4, 3, 4);
-
+      // Crisp Front-Facing Pixel Head & Face (Exact high-clarity look from screenshot!)
       const hy = y - 26;
       ctx.fillStyle = '#18181B';
       ctx.fillRect(x - 11, hy, 22, 21);
-
       ctx.fillStyle = ag.skinColor;
       ctx.fillRect(x - 9, hy + 4, 18, 15);
-      ctx.fillStyle = 'rgba(180, 110, 75, 0.28)';
-      ctx.fillRect(x + 5, hy + 7, 4, 11);
-
       ctx.fillStyle = ag.hairColor;
       ctx.fillRect(x - 9, hy + 2, 18, 5);
-      ctx.fillRect(x - 9, hy + 5, 3, 5);
-      ctx.fillRect(x + 6, hy + 5, 3, 5);
+      // Sideburns for extra crisp definition
+      ctx.fillRect(x - 9, hy + 7, 2, 3);
+      ctx.fillRect(x + 7, hy + 7, 2, 3);
 
-      ctx.fillStyle = ag.hairColor;
-      ctx.fillRect(x - 6, hy + 8, 4, 1);
-      ctx.fillRect(x + 2, hy + 8, 4, 1);
-
+      // Crisp White Sclera + Dark Pupils (2x2 pupils inside 4x2 eyes)
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(x - 6, hy + 10, 4, 2);
-      ctx.fillRect(x + 2, hy + 10, 4, 2);
+      ctx.fillRect(x - 6, hy + 10, 4, 3);
+      ctx.fillRect(x + 2, hy + 10, 4, 3);
       ctx.fillStyle = '#18181B';
-      ctx.fillRect(x - 5, hy + 10, 2, 2);
-      ctx.fillRect(x + 3, hy + 10, 2, 2);
+      ctx.fillRect(x - 5, hy + 10, 2, 3);
+      ctx.fillRect(x + 3, hy + 10, 2, 3);
 
-      ctx.fillStyle = '#C88D68';
-      ctx.fillRect(x - 1, hy + 12, 2, 2);
-
+      // Mouth / Expression
       ctx.fillStyle = '#993D3D';
       ctx.fillRect(x - 4, hy + 15, 8, 2);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(x - 4, hy + 15, 2, 1);
-      ctx.fillRect(x + 2, hy + 15, 2, 1);
 
       drawCharacterHat(ag, x, hy);
     }
@@ -1329,18 +1711,12 @@
         ctx.fillRect(x - 13, topY - 1, 26, 5);
         ctx.fillStyle = '#FCD34D';
         ctx.fillRect(x - 11, topY - 4, 22, 5);
-        ctx.fillStyle = '#B45309';
-        ctx.fillRect(x - 9, topY - 1, 18, 2);
       } else if (ag.accessory === 'cap') {
         ctx.fillStyle = '#1E1B4B';
         ctx.fillRect(x - 11, topY - 3, 22, 6);
-        ctx.fillStyle = '#FACC15';
-        ctx.fillRect(x - 2, topY - 2, 4, 2);
       } else if (ag.accessory === 'hat') {
         ctx.fillStyle = '#171717';
         ctx.fillRect(x - 12, topY - 1, 24, 4);
-        ctx.fillStyle = '#171717';
-        ctx.fillRect(x - 8, topY - 4, 16, 4);
       }
     }
 
@@ -1350,65 +1726,106 @@
       c.imageSmoothingEnabled = false;
       c.clearRect(0, 0, cv.width, cv.height);
 
-      const x = 14;
-      const hy = 3;
+      const x = 14, hy = 2;
+      // Head outline & skin
       c.fillStyle = '#18181B';
-      c.fillRect(x - 9, hy, 18, 18);
+      c.fillRect(x - 10, hy, 20, 18);
       c.fillStyle = ag.skinColor;
-      c.fillRect(x - 7, hy + 3, 14, 13);
+      c.fillRect(x - 8, hy + 3, 16, 13);
+      // Hair & sideburns
       c.fillStyle = ag.hairColor;
-      c.fillRect(x - 7, hy + 1, 14, 4);
+      c.fillRect(x - 8, hy + 1, 16, 4);
+      c.fillRect(x - 8, hy + 5, 2, 3);
+      c.fillRect(x + 6, hy + 5, 2, 3);
+
+      // Crisp White Sclera + Dark Pupils
       c.fillStyle = '#FFFFFF';
-      c.fillRect(x - 5, hy + 8, 3, 2);
-      c.fillRect(x + 2, hy + 8, 3, 2);
+      c.fillRect(x - 6, hy + 8, 4, 3);
+      c.fillRect(x + 2, hy + 8, 4, 3);
       c.fillStyle = '#18181B';
-      c.fillRect(x - 4, hy + 8, 2, 2);
-      c.fillRect(x + 3, hy + 8, 2, 2);
+      c.fillRect(x - 5, hy + 8, 2, 3);
+      c.fillRect(x + 3, hy + 8, 2, 3);
+
+      // Mouth
       c.fillStyle = '#993D3D';
-      c.fillRect(x - 3, hy + 12, 6, 2);
+      c.fillRect(x - 3, hy + 13, 6, 2);
+
+      // Suit + White Shirt + Tie
+      c.fillStyle = '#18181B';
+      c.fillRect(x - 10, hy + 18, 20, 8);
       c.fillStyle = ag.suitColor;
-      c.fillRect(x - 9, hy + 18, 18, 7);
-      c.fillStyle = '#FFFFFF';
-      c.fillRect(x - 3, hy + 18, 6, 5);
+      c.fillRect(x - 8, hy + 19, 16, 7);
+      c.fillStyle = ag.shirtColor || '#FFFFFF';
+      c.fillRect(x - 3, hy + 19, 6, 6);
       c.fillStyle = ag.tieColor || '#B91C1C';
-      c.fillRect(x - 1, hy + 19, 2, 5);
+      c.fillRect(x - 1, hy + 20, 2, 5);
     }
 
     /********************************************************************
-     * 8. AGENT MOVEMENT, AUTONOMOUS OFFICE LIFE & DOM OVERLAY RENDERER
+     * 10. AGENT MOVEMENT, LOUNGE LIFE & DOM SPEECH BUBBLE OVERLAY
      ********************************************************************/
+    function getAgentsVisibleOnCurrentFloor() {
+      const activeIds = new Set(getActiveAgentsForProblem().map(a => a.id));
+      // Top 3 podium winners also visit current floor's Podium Ramp so you can celebrate them on either floor!
+      const top3Ids = new Set(
+        getActiveAgentsForProblem()
+          .filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number')
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+          .map(a => a.id)
+      );
+
+      return AGENT_ROSTER.filter(ag => {
+        if (ag.isBoss) return true;
+        if (ag.floor === currentFloor && activeIds.has(ag.id)) return true;
+        if (top3Ids.has(ag.id)) return true;
+        return false;
+      });
+    }
+
     function updateAndDrawAgents() {
       const domOverlay = document.getElementById('office-dom-overlay');
       if (!domOverlay) return;
 
-      const activeAgents = getActiveAgentsForProblem();
+      const visibleAgents = getAgentsVisibleOnCurrentFloor();
 
-      if (!isTrainingRun && globalTick % 240 === 0) {
-        const workers = activeAgents.filter(a => !a.isBoss && a.status === 'idle');
-        const randomWorker = workers[Math.floor(Math.random() * workers.length)];
-        if (randomWorker) {
-          const dp = getDeskPosition(randomWorker.deskIdx);
-          const atDesk = Math.hypot(randomWorker.x - dp.x, randomWorker.y - dp.y) < 15;
-          if (atDesk && Math.random() < 0.45) {
-            const spots = [
-              { x: cw - 190, y: 455, msg: '< grabbing espresso ☕' },
-              { x: cw - 85, y: 455, msg: '< heading to shelf' },
-              { x: 310, y: 262, msg: '< updating the todo board' }
+      // Autonomous Coffee Bar & Plush Seating Lounge Mingling when Idle
+      if (!isTrainingRun && globalTick % 210 === 0) {
+        const idleWorkers = visibleAgents.filter(a => !a.isBoss && a.status === 'idle' && a.floor === currentFloor);
+        const pickWorker = idleWorkers[Math.floor(Math.random() * idleWorkers.length)];
+        if (pickWorker) {
+          const dp = getDeskPosition(pickWorker.deskIdx, pickWorker.floor);
+          const atDesk = Math.hypot(pickWorker.x - dp.x, pickWorker.y - dp.y) < 15;
+          if (atDesk && Math.random() < 0.52) {
+            const loungeSpots = [
+              { x: 118, y: 448, msg: '< chilling on lounge sofa 🛋️' },
+              { x: 185, y: 448, msg: '< chatting in seating area' },
+              { x: cw - 195, y: 445, msg: '< brewing espresso ☕' },
+              { x: cw - 125, y: 452, msg: '< reading skill docs 📚' }
             ];
-            const pick = spots[Math.floor(Math.random() * spots.length)];
-            randomWorker.targetX = pick.x;
-            randomWorker.targetY = pick.y;
-            randomWorker.bubble = pick.msg;
+            const spot = loungeSpots[Math.floor(Math.random() * loungeSpots.length)];
+            pickWorker.targetX = spot.x;
+            pickWorker.targetY = spot.y;
+            pickWorker.bubble = spot.msg;
           } else {
-            randomWorker.targetX = dp.x;
-            randomWorker.targetY = dp.y;
-            randomWorker.bubble = AMBIENT_BUBBLES[Math.floor(Math.random() * AMBIENT_BUBBLES.length)];
+            pickWorker.targetX = dp.x;
+            pickWorker.targetY = dp.y;
+            const pool = currentFloor === 2 ? AMBIENT_BUBBLES_2F : AMBIENT_BUBBLES_1F;
+            pickWorker.bubble = pool[Math.floor(Math.random() * pool.length)];
           }
         }
       }
 
-      const sorted = [...activeAgents].sort((a, b) => a.y - b.y);
-      let overlayHtml = '';
+      const sorted = [...visibleAgents].sort((a, b) => a.y - b.y);
+      const el = getOfficeZones().elevatorDoor;
+      const nextFloorLabel = currentFloor === 1 ? '🛗 LIFT TO 2F (DL LAB) ▲' : '🛗 LIFT TO 1F (ML FLOOR) ▼';
+      let overlayHtml = `
+        <div onclick="switchFloor(${currentFloor === 1 ? 2 : 1})"
+             class="pointer-events-auto cursor-pointer absolute transform -translate-x-1/2 px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-stone-950 border-2 border-stone-900 font-mono-code font-black text-[10px] shadow-md flex items-center gap-1 transition hover:scale-105"
+             style="left:${el.x + Math.round(el.w / 2)}px; top:${el.y + el.h + 30}px;">
+          <span>${nextFloorLabel}</span>
+        </div>
+      `;
 
       sorted.forEach((ag) => {
         const dx = ag.targetX - ag.x;
@@ -1417,7 +1834,7 @@
         let bob = 0;
 
         if (dist > 1.8) {
-          const speed = isTrainingRun ? 2.8 : 1.75;
+          const speed = isTrainingRun ? 3.1 : 1.85;
           ag.x += (dx / dist) * speed;
           ag.y += (dy / dist) * speed;
           bob = Math.sin(globalTick * 0.4) * 2;
@@ -1427,22 +1844,23 @@
 
         const isSelected = selectedAgent && selectedAgent.id === ag.id;
         const isFailed = ag.status === 'failed';
+        const isDL = ag.floor === 2;
         const bubbleText = ag.bubble || ag.current_task || 'awaiting';
         const bx = Math.round(ag.x);
         const by = Math.round(ag.y - 38);
         const ny = Math.round(ag.y + 11);
-        const shortTag = ag.isBoss ? 'Boss' : ag.modelName;
+        const floorBadge = ag.isBoss ? 'BOSS' : `${ag.floor}F • ${ag.modelName}`;
 
         overlayHtml += `
           <div class="absolute transform -translate-x-1/2 -translate-y-full flex flex-col items-center" style="left:${bx}px; top:${by}px;">
-            <div class="pixel-speech-bubble ${isSelected ? 'active-selected' : ''} ${isFailed ? 'bubble-failed' : ''}">${bubbleText}</div>
+            <div class="pixel-speech-bubble ${isSelected ? 'active-selected' : ''} ${isDL && !isFailed ? 'bubble-dl' : ''} ${isFailed ? 'bubble-failed' : ''}">${bubbleText}</div>
             <div class="flex flex-col items-start w-4 mt-0.5 ml-2">
               <div class="w-1.5 h-1.5 bg-white border border-stone-800 rounded-full"></div>
               <div class="w-1 h-1 bg-white border border-stone-800 rounded-full -ml-1 mt-0.5"></div>
             </div>
           </div>
           <div class="absolute transform -translate-x-1/2" style="left:${bx}px; top:${ny}px;">
-            <div class="pixel-nameplate">${ag.alias} <span class="text-amber-300 font-semibold">(${shortTag})</span></div>
+            <div class="pixel-nameplate">${ag.alias} <span class="${isDL ? 'text-cyan-300' : 'text-amber-300'} font-semibold">(${floorBadge})</span></div>
           </div>
         `;
       });
@@ -1451,140 +1869,147 @@
     }
 
     /********************************************************************
-     * 9. HIGH-IMPACT FEATURES (EXPORT, SANDBOX, XAI, HEAD-TO-HEAD)
+     * 11. ACTIVE MODELS FILTER BY PROBLEM TYPE (TABULAR / IMAGE / TEXT)
      ********************************************************************/
-    window.copyWinnerSklearnCode = function() {
-      const winner = getWinnerAgent() || AGENT_ROSTER[2];
-      const csvFile = currentDataset.filename || 'dataset.csv';
-      const targetCol = currentDataset.target || 'target';
-      const isReg = currentDataset.problem_type === 'regression';
-
-      const estimatorMap = {
-        'Random Forest': isReg ? 'RandomForestRegressor' : 'RandomForestClassifier',
-        'KNN': isReg ? 'KNeighborsRegressor' : 'KNeighborsClassifier',
-        'SVM': 'SVC',
-        'SVR': 'SVR',
-        'Logistic Regression': 'LogisticRegression',
-        'Ridge Regression': 'Ridge',
-        'Naive Bayes': 'GaussianNB'
-      };
-      const estClass = estimatorMap[winner.modelName] || 'RandomForestClassifier';
-      const paramsEntries = Object.entries(winner.best_params || {})
-        .filter(([k]) => k !== 'tuned')
-        .map(([k, v]) => `${k}=${typeof v === 'string' && v !== 'None' ? `'${v}'` : v}`)
-        .join(', ');
-
-      const code = `# Generated by Podium AutoML — #1 Winner: ${winner.alias} (${winner.modelName})
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.linear_model import LogisticRegression, Ridge
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC, SVR
-
-df = pd.read_csv("${csvFile}").dropna(subset=["${targetCol}"])
-X, y = df.drop(columns=["${targetCol}"]), df["${targetCol}"]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-num_cols = X_train.select_dtypes(include="number").columns.tolist()
-cat_cols = [c for c in X_train.columns if c not in num_cols]
-
-preprocessor = ColumnTransformer([
-    ("num", Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), num_cols),
-    ("cat", Pipeline([("impute", SimpleImputer(strategy="most_frequent")), ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False))]), cat_cols),
-])
-
-pipe = Pipeline([
-    ("prep", preprocessor),
-    ("model", ${estClass}(${paramsEntries}))
-])
-pipe.fit(X_train, y_train)
-print("Test Score:", pipe.score(X_test, y_test))`;
-
-      navigator.clipboard.writeText(code).then(() => {
-        sfx.winFanfare();
-        const lbl = document.getElementById('copy-code-btn-label');
-        if (lbl) {
-          lbl.textContent = 'Copied Python!';
-          setTimeout(() => { lbl.textContent = 'Copy Sklearn Code'; }, 2000);
-        }
-        showOfficeToast(`Copied ${winner.alias}'s Scikit-Learn Pipeline code!`, '📋');
+    function getActiveAgentsForProblem() {
+      const pType = currentDataset.problem_type;
+      if (taskModality === 'image' || pType === 'image_classification') {
+        // Vision ZIP uses ANN and CNN on Floor 2
+        return AGENT_ROSTER.filter(a => a.isBoss || a.id === 'ann' || a.id === 'cnn');
+      }
+      if (taskModality === 'text' || pType === 'text_classification') {
+        // NLP Text uses ANN, RNN, and TextCNN on Floor 2
+        return AGENT_ROSTER.filter(a => a.isBoss || a.id === 'ann' || a.id === 'rnn' || a.id === 'textcnn');
+      }
+      // Tabular CSV uses 1F Classical ML + 2F ANN, CNN, RNN
+      const isReg = pType === 'regression';
+      return AGENT_ROSTER.filter(a => {
+        if (a.isBoss) return true;
+        if (a.id === 'textcnn') return false; // TextCNN is only for NLP text runs
+        if (isReg && a.id === 'nb') return false; // Naive Bayes is classification-only
+        return true;
       });
-    };
+    }
 
-    window.downloadWinnerJoblib = async function() {
-      const winner = getWinnerAgent();
-      if (!winner || !currentDataset.dataset_id) {
-        showOfficeToast('Train a dataset on FastAPI first to download a .joblib artifact!', '⚠️');
-        return;
-      }
-      if (!liveFastApiAvailable || !currentDataset.isLiveServerDataset) {
-        showOfficeToast('Cannot download .joblib: FastAPI backend is offline (Demo Mode).', '⚠️');
-        return;
-      }
-
-      sfx.click();
-      const dsId = currentDataset.dataset_id;
-      const defaultFileName = `dataset_${dsId}_${winner.modelName}.joblib`;
-      const btnLbl = document.getElementById('download-joblib-btn-label');
-
-      try {
-        if (btnLbl) btnLbl.textContent = 'Downloading...';
-        const res = await fetch(`${apiBaseUrl}/download/${dsId}`);
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.detail || `Server returned ${res.status}`);
+    function syncModelNamesWithProblemType() {
+      const isReg = currentDataset.problem_type === 'regression';
+      AGENT_ROSTER.forEach(a => {
+        if (!a.isBoss && a.floor === 1) {
+          a.modelName = isReg ? a.regModel : a.classModel;
         }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = defaultFileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      });
 
-        if (btnLbl) {
-          btnLbl.textContent = 'Downloaded!';
-          setTimeout(() => { btnLbl.textContent = 'Download .joblib'; }, 2000);
-        }
-        sfx.winFanfare();
-        showOfficeToast(`Downloaded binary ${defaultFileName} from FastAPI!`, '⬇️');
-        addBossLog(`Grid-Master (Boss): Downloaded binary artifact 'models_saved/${defaultFileName}' via /download/${dsId}.`);
-      } catch (err) {
-        if (btnLbl) btnLbl.textContent = 'Download .joblib';
-        showOfficeToast(`FastAPI download error: ${err.message}`, '⚠️');
-        addBossLog(`Grid-Master (Boss): Could not fetch /download/${dsId} (${err.message}).`);
+      const activeWorkers = getActiveAgentsForProblem().filter(a => !a.isBoss);
+      const c1 = activeWorkers.filter(a => a.floor === 1).length;
+      const c2 = activeWorkers.filter(a => a.floor === 2).length;
+
+      const b1 = document.getElementById('badge-1f-count');
+      const b2 = document.getElementById('badge-2f-count');
+      if (b1) b1.textContent = c1;
+      if (b2) b2.textContent = c2;
+
+      const badge = document.getElementById('header-problem-badge');
+      if (badge) {
+        badge.textContent = currentDataset.filename
+          ? `${currentDataset.problem_type.toUpperCase()} // ${activeWorkers.length} MODELS`
+          : `READY // ${activeWorkers.length} MODELS`;
       }
-    };
 
-    window.openPredictionSandboxModal = function() {
+      const pill = document.getElementById('active-file-pill');
+      const pillText = document.getElementById('active-file-pill-text');
+      if (pill && pillText) {
+        if (currentDataset.filename) {
+          pillText.textContent = `${currentDataset.filename}`;
+          pill.className = currentDataset.isLiveServerDataset
+            ? 'px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-mono-code font-bold text-emerald-900 flex items-center gap-1.5'
+            : 'px-2.5 py-1.5 rounded-xl bg-amber-100 border border-amber-400 text-xs font-mono-code font-bold text-amber-950 flex items-center gap-1.5';
+        } else {
+          pillText.textContent = 'No file uploaded';
+          pill.className = 'px-2.5 py-1.5 rounded-xl bg-stone-100 border border-[#DFD6C0] text-xs font-mono-code font-bold text-stone-600 flex items-center gap-1.5';
+        }
+      }
+    }
+
+    function getWinnerAgent() {
+      const active = getActiveAgentsForProblem().filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number');
+      if (active.length === 0) return null;
+      return [...active].sort((a, b) => b.score - a.score)[0];
+    }
+
+    /********************************************************************
+     * 12. LIVE PREDICTION SANDBOX (HOOKED TO /features, /predict, /predict-image, /predict-text)
+     ********************************************************************/
+    window.openPredictionSandboxModal = async function() {
       const winner = getWinnerAgent() || AGENT_ROSTER[2];
       sfx.click();
       const modal = document.getElementById('sandbox-modal');
       const sub = document.getElementById('sandbox-winner-subtitle');
       const grid = document.getElementById('sandbox-inputs-grid');
+      const txtWrap = document.getElementById('sandbox-text-wrap');
+      const imgWrap = document.getElementById('sandbox-image-wrap');
+      const randBtn = document.getElementById('btn-sandbox-randomize');
       document.getElementById('sandbox-result-banner').classList.add('hidden');
 
-      sub.textContent = `Active Winner: ${winner.alias} (${winner.modelName}) • Target: ${currentDataset.target || 'Outcome'}`;
+      sub.textContent = `Winner: ${winner.alias} (${winner.modelName} • ${winner.floor}F) • Mode: ${currentDataset.problem_type}`;
 
-      const cols = (currentDataset.columns && currentDataset.columns.length > 1)
-        ? currentDataset.columns.filter(c => c !== currentDataset.target && !(currentDataset.dropped_columns || []).includes(c)).slice(0, 8)
-        : ['Feature_1', 'Feature_2', 'Category_A', 'Metric_Score'];
+      grid.classList.add('hidden');
+      txtWrap.classList.add('hidden');
+      imgWrap.classList.add('hidden');
+      randBtn.classList.add('hidden');
 
-      grid.innerHTML = cols.map((col, idx) => `
-        <div class="bg-white p-2 rounded-xl border border-[#DFD6C0]">
-          <label class="block text-[10px] font-mono-code font-bold text-stone-500 truncate mb-1">${col}</label>
-          <input type="text" data-sandbox-col="${col}" value="${(idx + 1) * 12.5}"
-                 class="sandbox-feature-input w-full font-mono-code text-xs font-bold text-stone-900 bg-[#FAF6EC] px-2 py-1 rounded border border-stone-300 focus:outline-none focus:border-amber-500" />
-        </div>
-      `).join('');
+      if (currentDataset.problem_type === 'image_classification' || taskModality === 'image') {
+        imgWrap.classList.remove('hidden');
+      } else if (currentDataset.problem_type === 'text_classification' || taskModality === 'text') {
+        txtWrap.classList.remove('hidden');
+      } else {
+        grid.classList.remove('hidden');
+        randBtn.classList.remove('hidden');
+
+        // Try fetching real feature_schema from GET /features/{dataset_id}
+        if (liveFastApiAvailable && currentDataset.isLiveServerDataset && currentDataset.dataset_id) {
+          try {
+            const res = await fetch(`${apiBaseUrl}/features/${currentDataset.dataset_id}`);
+            if (res.ok) {
+              const schemaData = await res.json();
+              grid.innerHTML = (schemaData.features || []).map(f => {
+                if (f.kind === 'category' && Array.isArray(f.options) && f.options.length > 0) {
+                  return `
+                    <div class="bg-white p-2 rounded-xl border border-[#DFD6C0]">
+                      <label class="block text-[10px] font-mono-code font-bold text-stone-500 truncate mb-1">${f.name} (cat)</label>
+                      <select data-sandbox-col="${f.name}" class="sandbox-feature-input w-full font-mono-code text-xs font-bold text-stone-900 bg-[#FAF6EC] px-2 py-1 rounded border border-stone-300">
+                        ${f.options.map(o => `<option value="${o}" ${o === f.default ? 'selected' : ''}>${o}</option>`).join('')}
+                      </select>
+                    </div>
+                  `;
+                }
+                return `
+                  <div class="bg-white p-2 rounded-xl border border-[#DFD6C0]">
+                    <label class="block text-[10px] font-mono-code font-bold text-stone-500 truncate mb-1">${f.name} (${f.min ?? 0}..${f.max ?? 100})</label>
+                    <input type="number" step="any" data-sandbox-col="${f.name}" value="${f.default ?? 0}"
+                           class="sandbox-feature-input w-full font-mono-code text-xs font-bold text-stone-900 bg-[#FAF6EC] px-2 py-1 rounded border border-stone-300" />
+                  </div>
+                `;
+              }).join('');
+              modal.classList.remove('hidden');
+              modal.classList.add('flex');
+              return;
+            }
+          } catch (_) {}
+        }
+
+        // Fallback feature inputs if not trained yet
+        const cols = (currentDataset.columns && currentDataset.columns.length > 1)
+          ? currentDataset.columns.filter(c => c !== currentDataset.target && !(currentDataset.dropped_columns || []).includes(c)).slice(0, 8)
+          : ['Feature_1', 'Feature_2', 'Feature_3', 'Feature_4'];
+
+        grid.innerHTML = cols.map((col, idx) => `
+          <div class="bg-white p-2 rounded-xl border border-[#DFD6C0]">
+            <label class="block text-[10px] font-mono-code font-bold text-stone-500 truncate mb-1">${col}</label>
+            <input type="text" data-sandbox-col="${col}" value="${(idx + 1) * 10}"
+                   class="sandbox-feature-input w-full font-mono-code text-xs font-bold text-stone-900 bg-[#FAF6EC] px-2 py-1 rounded border border-stone-300" />
+          </div>
+        `).join('');
+      }
 
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -1599,224 +2024,102 @@ print("Test Score:", pipe.score(X_test, y_test))`;
     window.fillRandomSandboxRow = function() {
       sfx.click();
       document.querySelectorAll('.sandbox-feature-input').forEach(inp => {
-        inp.value = (Math.random() * 100).toFixed(1);
+        if (inp.tagName === 'SELECT') {
+          const opts = inp.options;
+          if (opts.length > 0) inp.selectedIndex = Math.floor(Math.random() * opts.length);
+        } else {
+          inp.value = (Math.random() * 100).toFixed(1);
+        }
       });
     };
 
-    window.runLiveRowPrediction = function() {
+    function renderProbabilityBars(probs) {
+      const box = document.getElementById('sandbox-probabilities-bars');
+      if (!box) return;
+      if (!probs || Object.keys(probs).length === 0) {
+        box.innerHTML = '';
+        return;
+      }
+      box.innerHTML = Object.entries(probs).map(([cls, p]) => {
+        const pct = (p * 100).toFixed(1);
+        return `
+          <div class="text-[10px] font-mono-code">
+            <div class="flex justify-between"><span>Class ${cls}</span><strong>${pct}%</strong></div>
+            <div class="w-full h-1.5 bg-emerald-200/60 rounded-full overflow-hidden">
+              <div class="bg-emerald-600 h-full" style="width:${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.runLiveRowPrediction = async function() {
       const winner = getWinnerAgent() || AGENT_ROSTER[2];
       const boss = AGENT_ROSTER[0];
       sfx.dispatch();
 
-      const vals = Array.from(document.querySelectorAll('.sandbox-feature-input')).map(i => parseFloat(i.value) || 10);
-      const sum = vals.reduce((a, b) => a + b, 0);
+      if (liveFastApiAvailable && currentDataset.isLiveServerDataset && currentDataset.dataset_id) {
+        try {
+          let res;
+          if (currentDataset.problem_type === 'image_classification') {
+            const fileInp = document.getElementById('sandbox-image-input');
+            if (!fileInp.files[0]) {
+              showOfficeToast('Select an image file first!', '🖼️');
+              return;
+            }
+            const fd = new FormData();
+            fd.append('file', fileInp.files[0]);
+            res = await fetch(`${apiBaseUrl}/predict-image/${currentDataset.dataset_id}`, { method: 'POST', body: fd });
+          } else if (currentDataset.problem_type === 'text_classification') {
+            const txt = document.getElementById('sandbox-text-input').value;
+            res = await fetch(`${apiBaseUrl}/predict-text/${currentDataset.dataset_id}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: txt })
+            });
+          } else {
+            const rowObj = {};
+            document.querySelectorAll('.sandbox-feature-input').forEach(inp => {
+              rowObj[inp.dataset.sandboxCol] = inp.value;
+            });
+            res = await fetch(`${apiBaseUrl}/predict/${currentDataset.dataset_id}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ row: rowObj })
+            });
+          }
 
-      let predText = '';
-      let confText = typeof winner.score === 'number' ? `Score: ${winner.score.toFixed(4)}` : 'Untrained';
-      if (currentDataset.problem_type === 'regression') {
-        const regVal = (sum * 1.42).toFixed(2);
-        predText = `${regVal} (Demo Estimate)`;
-      } else {
-        const classes = currentDataset.target_info && currentDataset.target_info.balance_percent
-          ? Object.keys(currentDataset.target_info.balance_percent)
-          : ['Class_1', 'Class_0'];
-        const chosen = classes[Math.round(sum) % classes.length];
-        predText = `${chosen} (Demo Estimate)`;
+          if (res && res.ok) {
+            const data = await res.json();
+            document.getElementById('sandbox-result-label').textContent = `Real Model Prediction (${data.model})`;
+            document.getElementById('sandbox-result-value').textContent = String(data.prediction);
+            document.getElementById('sandbox-result-conf').textContent = typeof data.score === 'number' ? data.score.toFixed(4) : '—';
+            renderProbabilityBars(data.probabilities);
+            document.getElementById('sandbox-result-banner').classList.remove('hidden');
+
+            spawnFlyingPacket(boss.x, boss.y, winner, 'PRED', () => {
+              sfx.finishModel();
+              winner.bubble = `🔮 Pred: ${data.prediction}`;
+              showOfficeToast(`${winner.alias} predicted: ${data.prediction}`, '🔮');
+            });
+            return;
+          } else if (res) {
+            const err = await res.json().catch(() => ({}));
+            showOfficeToast(err.detail || 'Prediction failed', '⚠️');
+            return;
+          }
+        } catch (e) {
+          showOfficeToast(`Prediction error: ${e.message}`, '⚠️');
+          return;
+        }
       }
 
-      document.getElementById('sandbox-result-value').textContent = predText;
-      document.getElementById('sandbox-result-conf').textContent = confText;
-      document.getElementById('sandbox-result-banner').classList.remove('hidden');
-
-      boss.bubble = `✉️ testing row on ${winner.alias}`;
-      spawnFlyingPacket(boss.x, boss.y, winner, 'PREDICT', () => {
-        sfx.finishModel();
-        winner.bubble = `🔮 ${predText}`;
-        showOfficeToast(`${winner.alias}: ${predText}`, '🔮');
-        addBossLog(`Sandbox Preview: Dispatched test row to ${winner.alias} (${winner.modelName}) -> ${predText}.`);
-      });
-    };
-
-    window.openXaiModal = function() {
-      sfx.click();
-      const winner = getWinnerAgent() || AGENT_ROSTER[2];
-      const modal = document.getElementById('xai-modal');
-      document.getElementById('xai-subtitle').textContent = `Inspector: ${winner.alias} (${winner.modelName}) • Dataset: ${currentDataset.filename || 'None uploaded'}`;
-
-      const cols = (currentDataset.columns && currentDataset.columns.length > 1)
-        ? currentDataset.columns.filter(c => c !== currentDataset.target && !(currentDataset.dropped_columns || []).includes(c)).slice(0, 6)
-        : [];
-
-      const barsEl = document.getElementById('xai-feature-bars');
-      if (cols.length === 0) {
-        barsEl.innerHTML = `<div class="text-xs text-stone-400 py-4 text-center">Upload a CSV dataset to view active feature columns.</div>`;
-      } else {
-        barsEl.innerHTML = cols.map((col, idx) => `
-          <div class="flex items-center justify-between text-xs font-mono-code bg-[#FAF6EC] px-2.5 py-1.5 rounded-lg border border-[#E5DEC9]">
-            <span class="font-bold text-stone-800 truncate pr-2">${idx + 1}. ${col}</span>
-            <span class="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">Included in Pipeline</span>
-          </div>
-        `).join('');
-      }
-
-      const matrixTitle = document.getElementById('xai-matrix-title');
-      const matrixBox = document.getElementById('xai-matrix-box');
-      if (!winner || typeof winner.score !== 'number') {
-        matrixTitle.textContent = '🎯 Holdout Evaluation Metrics';
-        matrixBox.innerHTML = `<div class="text-xs text-stone-400 py-4 text-center">Run Podium training first to view real test-split evaluation metrics from train.py.</div>`;
-      } else if (currentDataset.problem_type === 'regression') {
-        matrixTitle.textContent = '📈 Regression Test Metrics (train.py)';
-        const r2Val = winner.metrics && winner.metrics.r2 !== undefined ? winner.metrics.r2.toFixed(4) : winner.score.toFixed(4);
-        const rmseVal = winner.metrics && winner.metrics.rmse !== undefined ? winner.metrics.rmse.toFixed(4) : '—';
-        matrixBox.innerHTML = `
-          <div class="grid grid-cols-2 gap-2 font-mono-code text-xs pt-1">
-            <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
-              <div class="text-[10px] text-emerald-700 font-bold">R² Score (Test)</div>
-              <div class="text-base font-black text-emerald-900 mt-0.5">${r2Val}</div>
-            </div>
-            <div class="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
-              <div class="text-[10px] text-amber-800 font-bold">RMSE (Test)</div>
-              <div class="text-base font-black text-amber-950 mt-0.5">${rmseVal}</div>
-            </div>
-            <div class="col-span-2 p-2.5 rounded-lg bg-stone-50 border border-stone-200 text-[11px] text-stone-600">
-              Best Params: <strong>${JSON.stringify(winner.best_params || {})}</strong> (${winner.seconds}s)
-            </div>
-          </div>
-        `;
-      } else {
-        matrixTitle.textContent = '🎯 Classification Test Metrics (train.py)';
-        const f1Val = winner.metrics && winner.metrics.f1 !== undefined ? winner.metrics.f1.toFixed(4) : winner.score.toFixed(4);
-        const accVal = winner.metrics && winner.metrics.accuracy !== undefined ? winner.metrics.accuracy.toFixed(4) : '—';
-        matrixBox.innerHTML = `
-          <div class="grid grid-cols-2 gap-2 text-center font-mono-code text-xs pt-1">
-            <div class="p-2.5 rounded-xl bg-emerald-50 border-2 border-emerald-300">
-              <div class="text-[10px] font-bold text-emerald-700">WEIGHTED F1 SCORE</div>
-              <div class="text-lg font-black text-emerald-900">${f1Val}</div>
-            </div>
-            <div class="p-2.5 rounded-xl bg-indigo-50 border-2 border-indigo-200">
-              <div class="text-[10px] font-bold text-indigo-700">TEST ACCURACY</div>
-              <div class="text-lg font-black text-indigo-900">${accVal}</div>
-            </div>
-            <div class="col-span-2 p-2.5 rounded-lg bg-stone-50 border border-stone-200 text-left text-[11px] text-stone-600">
-              Best Params: <strong>${JSON.stringify(winner.best_params || {})}</strong> (${winner.seconds}s)
-            </div>
-          </div>
-        `;
-      }
-
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    };
-
-    window.closeXaiModal = function() {
-      const modal = document.getElementById('xai-modal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    };
-
-    window.renderHeadToHeadComparison = function() {
-      const card = document.getElementById('head-to-head-card');
-      const selA = document.getElementById('compare-model-a');
-      const selB = document.getElementById('compare-model-b');
-      const body = document.getElementById('compare-metrics-body');
-      if (!card || !selA || !selB || !body) return;
-
-      const doneModels = getActiveAgentsForProblem()
-        .filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number')
-        .sort((a, b) => b.score - a.score);
-
-      if (doneModels.length < 2) {
-        card.classList.add('hidden');
-        return;
-      }
-      card.classList.remove('hidden');
-
-      const prevA = selA.value;
-      const prevB = selB.value;
-      const opts = doneModels.map(m => `<option value="${m.id}">${m.alias} (${m.modelName})</option>`).join('');
-      selA.innerHTML = opts;
-      selB.innerHTML = opts;
-
-      selA.value = doneModels.some(m => m.id === prevA) ? prevA : doneModels[0].id;
-      selB.value = doneModels.some(m => m.id === prevB && prevB !== selA.value)
-        ? prevB
-        : (doneModels[1] ? doneModels[1].id : doneModels[0].id);
-
-      const mA = doneModels.find(m => m.id === selA.value) || doneModels[0];
-      const mB = doneModels.find(m => m.id === selB.value) || doneModels[1];
-
-      const scoreDiff = ((mA.score - mB.score) * 100).toFixed(2);
-      const fasterAgent = (mA.seconds || 1) <= (mB.seconds || 1) ? mA : mB;
-      const moreAccurateAgent = mA.score >= mB.score ? mA : mB;
-
-      body.innerHTML = `
-        <div class="grid grid-cols-2 gap-2 font-mono-code text-[11px] bg-[#FAF6EC] p-2 rounded-lg border border-[#E5DEC9]">
-          <div>
-            <div class="font-bold text-stone-800">${mA.alias}</div>
-            <div class="text-emerald-700 font-extrabold">Score: ${mA.score.toFixed(4)}</div>
-            <div class="text-stone-500">Time: ${mA.seconds}s</div>
-          </div>
-          <div class="border-l border-[#DFD6C0] pl-2">
-            <div class="font-bold text-stone-800">${mB.alias}</div>
-            <div class="text-emerald-700 font-extrabold">Score: ${mB.score.toFixed(4)}</div>
-            <div class="text-stone-500">Time: ${mB.seconds}s</div>
-          </div>
-        </div>
-        <div class="text-[11px] text-stone-600 leading-snug">
-          💡 <strong>Recommendation:</strong> Pick <strong>${moreAccurateAgent.alias}</strong> for peak accuracy (${Math.abs(scoreDiff)}% Δ), or <strong>${fasterAgent.alias}</strong> for fastest training latency (${fasterAgent.seconds}s).
-        </div>
-      `;
+      showOfficeToast('Train a dataset on FastAPI first to run real /predict inference!', '⚠️');
     };
 
     /********************************************************************
-     * 10. SIDEBAR, LEADERBOARD, LOGS & INSIGHTS RENDERERS
+     * 13. SIDEBAR, DOCK, PODIUM LEADERBOARD & INSIGHTS RENDERERS
      ********************************************************************/
-    function getActiveAgentsForProblem() {
-      const isReg = currentDataset.problem_type === 'regression';
-      return AGENT_ROSTER.filter(a => {
-        if (a.isBoss) return true;
-        if (isReg && a.id === 'nb') return false;
-        return true;
-      });
-    }
-
-    function syncModelNamesWithProblemType() {
-      const isReg = currentDataset.problem_type === 'regression';
-      AGENT_ROSTER.forEach(a => {
-        if (!a.isBoss) {
-          a.modelName = isReg ? a.regModel : a.classModel;
-        }
-      });
-      const badge = document.getElementById('header-problem-badge');
-      if (badge) {
-        const count = isReg ? 4 : 5;
-        badge.textContent = currentDataset.filename
-          ? `${currentDataset.problem_type} // ${count} models`
-          : `READY // 5 MODELS`;
-      }
-      const pill = document.getElementById('active-file-pill');
-      const pillText = document.getElementById('active-file-pill-text');
-      if (pill && pillText) {
-        if (currentDataset.filename) {
-          const modeLabel = isReg ? 'Regression' : 'Classification';
-          const demoTag = currentDataset.isLiveServerDataset ? '' : ' [DEMO PREVIEW]';
-          pillText.textContent = `${currentDataset.filename} (${modeLabel})${demoTag}`;
-          pill.className = currentDataset.isLiveServerDataset
-            ? 'px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs font-mono-code font-bold text-emerald-900 flex items-center gap-1.5'
-            : 'px-3 py-1.5 rounded-xl bg-amber-100 border border-amber-400 text-xs font-mono-code font-bold text-amber-950 flex items-center gap-1.5';
-        } else {
-          pillText.textContent = 'No CSV uploaded';
-          pill.className = 'px-3 py-1.5 rounded-xl bg-stone-100 border border-[#DFD6C0] text-xs font-mono-code font-bold text-stone-600 flex items-center gap-1.5';
-        }
-      }
-    }
-
-    function getWinnerAgent() {
-      const active = getActiveAgentsForProblem().filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number');
-      if (active.length === 0) return null;
-      return [...active].sort((a, b) => b.score - a.score)[0];
-    }
-
     function renderBottomCharacterDock() {
       const dock = document.getElementById('bottom-character-dock');
       if (!dock) return;
@@ -1831,23 +2134,24 @@ print("Test Score:", pipe.score(X_test, y_test))`;
           ag.status === 'failed' ? 'bg-rose-100 text-rose-800 font-extrabold' :
           'bg-stone-200 text-stone-700';
 
-        const subRoleLabel = ag.isBoss ? 'Boss' : ag.displayRole;
+        const floorBadge = ag.isBoss ? '1F/2F' : `${ag.floor}F`;
 
         return `
           <div onclick="selectAgentFromDock('${ag.id}')"
                class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border cursor-pointer transition shrink-0 ${
                  isSelected ? 'bg-amber-100/95 border-amber-500 shadow-xs' : 'bg-white hover:bg-stone-50 border-[#DFD6C0]'
                }">
-            <div class="w-8 h-8 rounded-lg bg-[#E5DEC9] border border-stone-400 flex items-center justify-center overflow-hidden shrink-0">
+            <div class="w-8 h-8 rounded-lg ${ag.floor === 2 ? 'bg-indigo-100 border-indigo-400' : 'bg-[#E5DEC9] border-stone-400'} border flex items-center justify-center overflow-hidden shrink-0">
               <canvas id="dock-avatar-${ag.id}" width="28" height="28" class="w-7 h-7"></canvas>
             </div>
             <div>
               <div class="flex items-center gap-1.5">
-                <span class="font-extrabold text-xs text-stone-900">${isWinner ? '👑 ' : ''}${ag.alias} <span class="text-stone-500 font-semibold">(${ag.isBoss ? 'Boss' : ag.modelName})</span></span>
+                <span class="text-[9px] font-mono-code font-bold px-1 rounded ${ag.floor === 2 ? 'bg-indigo-100 text-indigo-800' : 'bg-stone-200 text-stone-700'}">${floorBadge}</span>
+                <span class="font-extrabold text-xs text-stone-900">${isWinner ? '👑 ' : ''}${ag.alias}</span>
                 <span class="text-[10px] font-mono-code px-1.5 py-0.2 rounded font-bold ${statusBadgeClass}">${ag.status}</span>
               </div>
               <div class="text-[10px] font-mono-code text-stone-500 truncate max-w-[165px]">
-                ${ag.status === 'failed' ? '❌ ' + (ag.error || 'Failed') : subRoleLabel + (typeof ag.score === 'number' ? ' • ' + ag.score.toFixed(4) : '')}
+                ${ag.status === 'failed' ? '❌ ' + (ag.error || 'Failed') : ag.displayRole + (typeof ag.score === 'number' ? ' • ' + ag.score.toFixed(4) : '')}
               </div>
             </div>
           </div>
@@ -1864,7 +2168,11 @@ print("Test Score:", pipe.score(X_test, y_test))`;
       const found = AGENT_ROSTER.find(a => a.id === id);
       if (found) {
         selectedAgent = found;
-        sfx.click();
+        if (!found.isBoss && found.floor !== currentFloor) {
+          switchFloor(found.floor);
+        } else {
+          sfx.click();
+        }
         updateSelectedAgentFooter();
         renderBottomCharacterDock();
         renderSidebarAgentsList();
@@ -1883,12 +2191,13 @@ print("Test Score:", pipe.score(X_test, y_test))`;
         ag.alias.toLowerCase().includes(searchQ) ||
         ag.displayRole.toLowerCase().includes(searchQ) ||
         ag.modelName.toLowerCase().includes(searchQ) ||
-        (ag.current_task && ag.current_task.toLowerCase().includes(searchQ))
+        `${ag.floor}f`.includes(searchQ)
       );
 
       listEl.innerHTML = filtered.map(ag => {
         const isSelected = selectedAgent && selectedAgent.id === ag.id;
         const isWinner = getWinnerAgent() && getWinnerAgent().id === ag.id;
+        const isDL = ag.floor === 2;
         const dotClass =
           ag.status === 'done' ? 'bg-emerald-500' :
           ag.status === 'training' ? 'bg-amber-500 animate-pulse' :
@@ -1901,22 +2210,22 @@ print("Test Score:", pipe.score(X_test, y_test))`;
 
         return `
           <div onclick="selectAgentFromDock('${ag.id}')"
-               class="p-3 rounded-xl border cursor-pointer transition ${
+               class="p-2.5 rounded-xl border cursor-pointer transition ${
                  ag.status === 'failed' ? 'bg-rose-50/70 border-rose-300' :
                  (isSelected ? 'bg-amber-50 border-amber-500 shadow-xs' : 'bg-white hover:bg-stone-50 border-[#DFD6C0]')
                }">
             <div class="flex items-center justify-between mb-1">
               <div class="flex items-center gap-1.5">
                 <span class="w-2.5 h-2.5 rounded-full ${dotClass}"></span>
+                <span class="text-[9px] font-mono-code font-bold px-1.5 py-0.2 rounded ${isDL ? 'bg-indigo-100 text-indigo-800 border border-indigo-300' : 'bg-amber-100 text-amber-900'}">${ag.floor}F ${isDL ? 'DL' : 'ML'}</span>
                 <span class="font-extrabold text-xs text-stone-900">${isWinner ? '🏆 ' : ''}${ag.alias}</span>
-                <span class="text-[11px] font-mono-code font-semibold text-stone-600">(${ag.displayRole})</span>
               </div>
               <span class="font-mono-code font-extrabold text-xs ${typeof ag.score === 'number' ? 'text-emerald-700' : (ag.status === 'failed' ? 'text-rose-600' : 'text-stone-500')}">
                 ${rightLabel}
               </span>
             </div>
             <div class="flex items-center justify-between text-[10px] font-mono-code ${ag.status === 'failed' ? 'text-rose-700 bg-rose-100/70 border-rose-200' : 'text-stone-500 bg-[#FAF6EC] border-[#E5DEC9]'} px-2 py-1 rounded-lg border">
-              <span class="truncate pr-2">${ag.status === 'failed' ? '❌ ' + (ag.error || 'Model training failed') : 'Grid: ' + ag.gridDesc}</span>
+              <span class="truncate pr-2">${ag.status === 'failed' ? '❌ ' + (ag.error || 'Model training failed') : ag.displayRole + ' • ' + ag.gridDesc}</span>
               <span class="font-bold text-stone-700 shrink-0">${ag.seconds ? ag.seconds + 's' : '--'}</span>
             </div>
           </div>
@@ -1931,9 +2240,7 @@ print("Test Score:", pipe.score(X_test, y_test))`;
       const demoBanner = document.getElementById('podium-demo-banner');
       if (!top3Container || !rowsContainer) return;
 
-      if (demoBanner) {
-        demoBanner.classList.toggle('hidden', !currentDataset.isSimulatedDemo);
-      }
+      if (demoBanner) demoBanner.classList.toggle('hidden', !currentDataset.isSimulatedDemo);
 
       const doneModels = getActiveAgentsForProblem()
         .filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number')
@@ -1947,20 +2254,17 @@ print("Test Score:", pipe.score(X_test, y_test))`;
         document.getElementById('head-to-head-card').classList.add('hidden');
         top3Container.innerHTML = `<div class="col-span-3 text-center text-xs text-stone-400 py-4">${
           isTrainingRun
-            ? 'Training models on ' + currentDataset.filename + '...'
-            : (currentDataset.filename ? 'Select Target column and click "🚀 Run Podium" to start training' : 'Upload a CSV file and click "🚀 Run Podium"')
+            ? 'Training 1F & 2F models on ' + currentDataset.filename + '...'
+            : 'Upload a dataset and click "🚀 Run Podium" to start training'
         }</div>`;
-
-        if (failedModels.length > 0) {
-          rowsContainer.innerHTML = failedModels.map(ag => `
-            <div class="px-3 py-2.5 flex items-center justify-between text-xs bg-rose-50/60">
-              <div class="font-bold text-rose-800">❌ ${ag.alias} (${ag.modelName})</div>
-              <div class="font-mono-code text-[10px] text-rose-600">${ag.error || 'Failed'}</div>
-            </div>
-          `).join('');
-        } else {
-          rowsContainer.innerHTML = `<div class="p-4 text-center text-xs text-stone-400">No completed runs yet.</div>`;
-        }
+        rowsContainer.innerHTML = failedModels.length > 0
+          ? failedModels.map(ag => `
+              <div class="px-3 py-2.5 flex items-center justify-between text-xs bg-rose-50/60">
+                <div class="font-bold text-rose-800">❌ ${ag.alias} (${ag.modelName})</div>
+                <div class="font-mono-code text-[10px] text-rose-600">${ag.error || 'Failed'}</div>
+              </div>
+            `).join('')
+          : `<div class="p-4 text-center text-xs text-stone-400">No completed runs yet.</div>`;
         return;
       }
 
@@ -1975,7 +2279,7 @@ print("Test Score:", pipe.score(X_test, y_test))`;
           <div class="bg-white rounded-xl border border-[#DFD6C0] p-2.5 text-center shadow-2xs flex flex-col items-center">
             <span class="text-[10px] font-black px-2 py-0.5 rounded-md mb-1 ${bgBadge}">${medal}</span>
             <div class="font-extrabold text-xs text-stone-900 truncate w-full">${ag.alias}</div>
-            <div class="text-[10px] font-mono-code text-stone-500 truncate w-full">${ag.displayRole}</div>
+            <div class="text-[10px] font-mono-code text-stone-500 truncate w-full">${ag.floor}F • ${ag.modelName}</div>
             <div class="font-mono-code font-extrabold text-xs text-emerald-700 mt-1">${ag.score.toFixed(4)}</div>
           </div>
         `;
@@ -1989,7 +2293,7 @@ print("Test Score:", pipe.score(X_test, y_test))`;
             <div class="flex items-center gap-2.5 truncate pr-2">
               <span class="w-5 h-5 rounded-full bg-stone-100 border border-stone-300 font-mono-code font-bold text-[10px] flex items-center justify-center text-stone-700 shrink-0">${rank}</span>
               <div class="truncate">
-                <div class="font-bold text-stone-900">${ag.alias} <span class="font-mono-code font-normal text-stone-500 text-[11px]">(${ag.displayRole})</span></div>
+                <div class="font-bold text-stone-900">${ag.alias} <span class="font-mono-code font-normal text-stone-500 text-[10px]">(${ag.floor}F • ${ag.modelName})</span></div>
                 <div class="font-mono-code text-[10px] text-stone-400 truncate max-w-[190px]">${pStr}</div>
               </div>
             </div>
@@ -2001,14 +2305,13 @@ print("Test Score:", pipe.score(X_test, y_test))`;
         `;
       }).join('');
 
-      // Append failed models at the bottom clearly marked as FAILED (never ranked as winners)
       if (failedModels.length > 0) {
         rowsHtml += failedModels.map(ag => `
           <div class="px-3 py-2 flex items-center justify-between text-xs bg-rose-50/70">
             <div class="flex items-center gap-2 truncate pr-2">
               <span class="w-5 h-5 rounded-full bg-rose-200 text-rose-800 font-mono-code font-bold text-[10px] flex items-center justify-center shrink-0">✕</span>
               <div class="truncate">
-                <div class="font-bold text-rose-900">${ag.alias} <span class="font-mono-code font-normal text-rose-600 text-[11px]">(${ag.modelName})</span></div>
+                <div class="font-bold text-rose-900">${ag.alias} (${ag.modelName})</div>
                 <div class="font-mono-code text-[10px] text-rose-600 truncate max-w-[190px]">${ag.error || 'Failed'}</div>
               </div>
             </div>
@@ -2021,104 +2324,6 @@ print("Test Score:", pipe.score(X_test, y_test))`;
       renderHeadToHeadComparison();
     }
 
-    function addBossLog(message) {
-      const timeStr = new Date().toLocaleTimeString([], { hour12: false });
-      bossLogs.push({ id: bossLogs.length + 1, message, time: timeStr });
-      const container = document.getElementById('boss-logs-container');
-      if (!container) return;
-
-      const div = document.createElement('div');
-      const isWinner = message.startsWith('Winner:');
-      const isFailed = message.toLowerCase().includes('failed');
-      const isBoss = message.startsWith('Boss:') || message.startsWith('Grid-Master');
-      div.className = `leading-relaxed border-b border-stone-800 pb-1.5 ${
-        isWinner ? 'text-amber-300 font-bold' :
-        isFailed ? 'text-rose-400 font-semibold' :
-        isBoss ? 'text-emerald-300 font-semibold' : 'text-stone-300'
-      }`;
-      div.innerHTML = `<span class="text-stone-500">[${timeStr}]</span> ${message}`;
-      container.appendChild(div);
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function renderInsightsTab() {
-      const d = currentDataset;
-      const warnBox = document.getElementById('insights-warnings-box');
-      const modeBanner = document.getElementById('insights-mode-banner');
-      if (modeBanner) {
-        modeBanner.classList.toggle('hidden', !d.filename || d.isLiveServerDataset);
-      }
-
-      if (!d.filename) {
-        warnBox.innerHTML = `<div class="p-3 rounded-xl bg-stone-100 text-stone-500 text-xs">Upload a CSV file to inspect rows, dropped noise columns, and target distribution.</div>`;
-        document.getElementById('insights-stats-grid').innerHTML = '';
-        document.getElementById('insights-dropped-cols').innerHTML = `<span class="text-xs text-stone-400">—</span>`;
-        document.getElementById('insights-target-breakdown').innerHTML = `<span class="text-xs text-stone-400">No target column selected yet.</span>`;
-        return;
-      }
-
-      warnBox.innerHTML = (d.warnings || []).map(w => `
-        <div class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-medium flex items-start gap-2">
-          <span>⚠️</span>
-          <span>${w}</span>
-        </div>
-      `).join('');
-
-      const numCols = Array.isArray(d.columns) ? d.columns.length : (d.columns || 0);
-      const statsGrid = document.getElementById('insights-stats-grid');
-      statsGrid.innerHTML = `
-        <div class="bg-white p-2.5 rounded-xl border border-[#DFD6C0]">
-          <div class="text-[10px] font-bold uppercase text-stone-400">Rows &amp; Cols</div>
-          <div class="font-mono-code font-extrabold text-sm text-stone-900 mt-0.5">${(d.rows || 0).toLocaleString()} × ${numCols}</div>
-        </div>
-        <div class="bg-white p-2.5 rounded-xl border border-[#DFD6C0]">
-          <div class="text-[10px] font-bold uppercase text-stone-400">Features Split</div>
-          <div class="font-mono-code font-extrabold text-sm text-stone-900 mt-0.5">${d.numeric_features || 0} num / ${d.text_features || 0} text</div>
-        </div>
-      `;
-
-      const dropContainer = document.getElementById('insights-dropped-cols');
-      if (d.dropped_columns && d.dropped_columns.length > 0) {
-        dropContainer.innerHTML = d.dropped_columns.map(c => `
-          <span class="px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-800 font-mono-code text-[11px] font-semibold">
-            ✂️ ${c}
-          </span>
-        `).join('');
-      } else {
-        dropContainer.innerHTML = `<span class="text-xs text-stone-400">No noisy ID/text columns dropped.</span>`;
-      }
-
-      const targetBox = document.getElementById('insights-target-breakdown');
-      let html = '';
-      if (d.target_info && d.target_info.balance_percent) {
-        html += `<div class="font-bold text-xs text-stone-700 mb-1.5">Target Class Balance (${d.target}):</div>`;
-        Object.entries(d.target_info.balance_percent).forEach(([k, pct]) => {
-          html += `
-            <div class="space-y-0.5 mb-1.5">
-              <div class="flex justify-between text-[11px] font-mono-code">
-                <span>Class ${k}</span>
-                <span class="font-bold">${pct}%</span>
-              </div>
-              <div class="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden">
-                <div class="bg-amber-500 h-full rounded-full" style="width:${pct}%"></div>
-              </div>
-            </div>
-          `;
-        });
-      } else if (d.target_info && d.target_info.min !== undefined) {
-        html += `
-          <div class="font-bold text-xs text-stone-700 mb-1.5">Target Summary (${d.target} — Regression):</div>
-          <div class="grid grid-cols-2 gap-2 font-mono-code text-xs">
-            <div>Min: <strong>${d.target_info.min}</strong></div>
-            <div>Max: <strong>${d.target_info.max}</strong></div>
-            <div>Mean: <strong>${d.target_info.mean}</strong></div>
-            <div>Median: <strong>${d.target_info.median}</strong></div>
-          </div>
-        `;
-      }
-      targetBox.innerHTML = html || `<span class="text-xs text-stone-400">Select a target column to inspect distribution.</span>`;
-    }
-
     function updateSelectedAgentFooter() {
       if (!selectedAgent) return;
       document.getElementById('footer-selected-model').textContent = `${selectedAgent.alias} (${selectedAgent.displayRole})`;
@@ -2129,122 +2334,11 @@ print("Test Score:", pipe.score(X_test, y_test))`;
       const pStr = Object.entries(selectedAgent.best_params || {})
         .map(([k, v]) => `${k}: ${v}`)
         .join(', ');
-      document.getElementById('footer-selected-params').textContent = pStr || 'Ready';
+      document.getElementById('footer-selected-params').textContent = pStr || `${selectedAgent.floor || 1}F • Ready`;
     }
 
     /********************************************************************
-     * 11. REAL CLIENT-SIDE CSV INSIGHTS CALCULATOR (NO FAKE 58%/42% DATA)
-     ********************************************************************/
-    function computeClientSideInsightsForTarget(headers, rows, targetCol) {
-      const targetIdx = headers.indexOf(targetCol);
-      const validRows = targetIdx >= 0
-        ? rows.filter(r => r[targetIdx] !== undefined && r[targetIdx] !== '')
-        : rows;
-
-      const totalRows = validRows.length;
-      let numericCount = 0;
-      const dropped = [];
-      const missingList = [];
-
-      headers.forEach((col, cIdx) => {
-        let missingCount = 0;
-        const nonEmpty = [];
-        for (const r of validRows) {
-          const val = r[cIdx];
-          if (val === undefined || val === '') {
-            missingCount++;
-          } else {
-            nonEmpty.push(val);
-          }
-        }
-        if (missingCount > 0 && totalRows > 0) {
-          missingList.push({
-            column: col,
-            missing: missingCount,
-            percent: Number(((missingCount / totalRows) * 100).toFixed(1))
-          });
-        }
-        if (col === targetCol) return;
-
-        const uniqueVals = new Set(nonEmpty);
-        const allNumeric = nonEmpty.length > 0 && nonEmpty.every(v => !isNaN(Number(v)));
-        const allIntegers = allNumeric && nonEmpty.every(v => Number.isInteger(Number(v)));
-        if (allNumeric) numericCount++;
-
-        const isIdLike = allIntegers && uniqueVals.size === validRows.length;
-        if (isIdLike || uniqueVals.size <= 1 || (!allNumeric && uniqueVals.size > 50)) {
-          dropped.push(col);
-        }
-      });
-
-      const targetVals = targetIdx >= 0 ? validRows.map(r => r[targetIdx]) : [];
-      const targetUnique = new Set(targetVals);
-      const targetNumeric = targetVals.length > 0 && targetVals.every(v => !isNaN(Number(v)));
-      const targetInteger = targetNumeric && targetVals.every(v => Number.isInteger(Number(v)));
-
-      let problemType = 'regression';
-      if (!targetNumeric || (targetInteger && targetUnique.size <= 15)) {
-        problemType = 'classification';
-      }
-
-      const warnings = [];
-      let targetInfo = { column: targetCol, type: problemType };
-
-      if (problemType === 'classification') {
-        const counts = {};
-        targetVals.forEach(v => { counts[v] = (counts[v] || 0) + 1; });
-        const sortedEntries = Object.entries(counts)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 10);
-        const balance = {};
-        let minPct = 100;
-        sortedEntries.forEach(([k, cnt]) => {
-          const pct = totalRows > 0 ? Number(((cnt / totalRows) * 100).toFixed(1)) : 0;
-          balance[k] = pct;
-          if (pct < minPct) minPct = pct;
-        });
-        targetInfo.balance_percent = balance;
-        if (minPct < 10 && sortedEntries.length > 1) {
-          warnings.push('Target classes are imbalanced: a small class has under 10% of rows.');
-        }
-      } else {
-        const nums = targetVals.map(Number).sort((a, b) => a - b);
-        const minV = nums.length ? nums[0] : 0;
-        const maxV = nums.length ? nums[nums.length - 1] : 0;
-        const meanV = nums.length ? Number((nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(3)) : 0;
-        const mid = Math.floor(nums.length / 2);
-        const medianV = nums.length
-          ? Number((nums.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2).toFixed(3))
-          : 0;
-        targetInfo = { column: targetCol, type: 'regression', min: minV, max: maxV, mean: meanV, median: medianV };
-      }
-
-      missingList.forEach(item => {
-        if (item.percent > 30) {
-          warnings.push(`Column '${item.column}' is ${item.percent}% empty.`);
-        }
-      });
-      if (totalRows < 500) {
-        warnings.push('Small dataset (under 500 rows): scores can vary a lot.');
-      }
-      if (dropped.length > 0) {
-        warnings.push('These columns were ignored as noise: ' + dropped.join(', ') + '.');
-      }
-
-      return {
-        rows: totalRows,
-        numeric_features: numericCount,
-        text_features: Math.max(0, headers.length - 1 - numericCount),
-        dropped_columns: dropped,
-        missing: missingList,
-        problem_type: problemType,
-        target_info: targetInfo,
-        warnings
-      };
-    }
-
-    /********************************************************************
-     * 12. TRAINING ORCHESTRATION (STRICTLY ON "RUN PODIUM" CLICK)
+     * 14. TRAINING ORCHESTRATION (/run, /run-images, /run-text)
      ********************************************************************/
     async function detectFastApiBackend() {
       try {
@@ -2278,13 +2372,13 @@ print("Test Score:", pipe.score(X_test, y_test))`;
           ag.seconds = null;
           ag.best_params = null;
           ag.error = null;
-          ag.current_task = 'Ready — click Run Podium';
+          ag.current_task = `Ready on ${ag.floor}F`;
           ag.bubble = 'ready to train';
-          const dp = getDeskPosition(ag.deskIdx);
+          const dp = getDeskPosition(ag.deskIdx, ag.floor);
           ag.targetX = dp.x;
           ag.targetY = dp.y;
         } else {
-          ag.bubble = currentDataset.filename ? `Target: ${currentDataset.target}` : 'upload CSV to start';
+          ag.bubble = currentDataset.filename ? `File: ${currentDataset.filename}` : 'upload dataset to start';
         }
       });
     }
@@ -2298,11 +2392,11 @@ print("Test Score:", pipe.score(X_test, y_test))`;
           ag.seconds = null;
           ag.best_params = null;
           ag.error = null;
-          ag.current_task = 'Waiting in line';
-          ag.bubble = 'awaiting';
-          const qp = getQueuePosition(idx);
-          ag.targetX = qp.x;
-          ag.targetY = qp.y;
+          ag.current_task = 'Waiting in Lounge';
+          ag.bubble = '☕ queued in lounge';
+          const lp = getCommonLoungePosition(idx);
+          ag.targetX = lp.x;
+          ag.targetY = lp.y;
         }
       });
       bossLogs = [];
@@ -2310,39 +2404,34 @@ print("Test Score:", pipe.score(X_test, y_test))`;
       if (logBox) logBox.innerHTML = '';
     }
 
-    // FIX #2: Refresh insights ONLY when CSV is uploaded or Target column changes (DOES NOT start training)
     async function refreshDatasetInsightsOnly(targetCol) {
       if (!currentDataset.filename) return;
-      currentDataset.target = targetCol;
+      if (targetCol) currentDataset.target = targetCol;
 
-      if (liveFastApiAvailable && currentDataset.isLiveServerDataset) {
+      if (liveFastApiAvailable && currentDataset.isLiveServerDataset && currentDataset.dataset_id) {
         try {
-          const insRes = await fetch(`${apiBaseUrl}/insights/${currentDataset.dataset_id}?target=${encodeURIComponent(targetCol)}`);
+          const q = targetCol && taskModality === 'tabular' ? `?target=${encodeURIComponent(targetCol)}` : '';
+          const insRes = await fetch(`${apiBaseUrl}/insights/${currentDataset.dataset_id}${q}`);
           if (insRes.ok) {
             const ins = await insRes.json();
-            currentDataset.rows = ins.rows;
-            currentDataset.numeric_features = ins.numeric_features;
-            currentDataset.text_features = ins.text_features;
+            currentDataset.rows = ins.rows ?? ins.images ?? currentDataset.rows;
+            currentDataset.numeric_features = ins.numeric_features ?? 0;
+            currentDataset.text_features = ins.text_features ?? 0;
             currentDataset.dropped_columns = ins.dropped_columns || [];
             currentDataset.warnings = ins.warnings || [];
             if (ins.target) {
               currentDataset.target_info = ins.target;
-              currentDataset.problem_type = ins.target.type;
+              if (taskModality === 'tabular') currentDataset.problem_type = ins.target.type;
+            } else if (ins.balance_percent) {
+              currentDataset.target_info = { balance_percent: ins.balance_percent };
             }
           }
         } catch (_) {}
-      } else if (currentDataset.rawHeaders && currentDataset.rawParsedRows) {
-        const computed = computeClientSideInsightsForTarget(
-          currentDataset.rawHeaders,
-          currentDataset.rawParsedRows,
-          targetCol
-        );
-        Object.assign(currentDataset, computed);
       }
 
       document.getElementById('hud-status-dot').className = 'w-2 h-2 rounded-full bg-amber-400';
       document.getElementById('hud-dataset-name').textContent = currentDataset.filename;
-      document.getElementById('hud-target-col').textContent = currentDataset.target || '—';
+      document.getElementById('hud-target-col').textContent = currentDataset.target || 'folder classes';
       document.getElementById('hud-rows-count').textContent = (currentDataset.rows || 0).toLocaleString();
 
       resetAllAgentsToIdleForSelection();
@@ -2354,25 +2443,44 @@ print("Test Score:", pipe.score(X_test, y_test))`;
       updateSelectedAgentFooter();
     }
 
-    // FIX #2 & #3: Training ONLY runs when user explicitly clicks "🚀 Run Podium"
     async function triggerPodiumTrainingRun() {
       if (!currentDataset.filename) {
-        showOfficeToast('Please upload a CSV file first!', '📂');
+        showOfficeToast('Please upload a CSV or Image ZIP file first!', '📂');
         return;
       }
-
-      const targetCol = document.getElementById('target-column-select').value;
-      if (!targetCol) {
-        showOfficeToast('Please select a Target column first!', '🎯');
-        return;
-      }
-      currentDataset.target = targetCol;
-
-      // FIX #3: Never silently run fake Math.random() scores if FastAPI backend is offline or fails!
       if (!liveFastApiAvailable || !currentDataset.isLiveServerDataset) {
-        showOfficeToast('FastAPI backend is offline! Start uvicorn main:app to run real training.', '⚠️');
-        addBossLog(`Grid-Master (Boss): Cannot start real training — FastAPI backend is offline. Start 'uvicorn main:app --reload' and re-upload '${currentDataset.filename}'.`);
+        showOfficeToast('FastAPI backend is offline! Start uvicorn main:app to train.', '⚠️');
         return;
+      }
+
+      let endpointUrl = '';
+      let packetTag = 'CSV';
+
+      if (taskModality === 'image') {
+        endpointUrl = `${apiBaseUrl}/run-images/${currentDataset.dataset_id}`;
+        packetTag = 'ZIP';
+        switchFloor(2);
+      } else if (taskModality === 'text') {
+        const textCol = document.getElementById('text-column-select').value;
+        const labelCol = document.getElementById('target-column-select').value;
+        if (!textCol || !labelCol || textCol === labelCol) {
+          showOfficeToast('Pick distinct Text Column and Label Column first!', '📝');
+          return;
+        }
+        currentDataset.text_column = textCol;
+        currentDataset.target = labelCol;
+        endpointUrl = `${apiBaseUrl}/run-text/${currentDataset.dataset_id}?text_column=${encodeURIComponent(textCol)}&label_column=${encodeURIComponent(labelCol)}`;
+        packetTag = 'TXT';
+        switchFloor(2);
+      } else {
+        const targetCol = document.getElementById('target-column-select').value;
+        if (!targetCol) {
+          showOfficeToast('Select a Target column first!', '🎯');
+          return;
+        }
+        currentDataset.target = targetCol;
+        endpointUrl = `${apiBaseUrl}/run/${currentDataset.dataset_id}?target=${encodeURIComponent(targetCol)}`;
+        packetTag = 'CSV';
       }
 
       if (pollTimer) {
@@ -2380,56 +2488,38 @@ print("Test Score:", pipe.score(X_test, y_test))`;
         pollTimer = null;
       }
       isTrainingRun = true;
-      currentDataset.isSimulatedDemo = false;
       sfx.dispatch();
 
-      const boss = AGENT_ROSTER[0];
-      getActiveAgentsForProblem().filter(a => !a.isBoss).forEach((worker, idx) => {
-        setTimeout(() => {
-          spawnFlyingPacket(boss.x, boss.y, worker, 'CSV');
-        }, idx * 120);
-      });
+      resetAllAgentsForNewRun();
+      dispatchBossFileTransferWave(packetTag);
 
       document.getElementById('hud-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
-      document.getElementById('hud-dataset-name').textContent = currentDataset.filename;
-      document.getElementById('hud-target-col').textContent = targetCol;
-      document.getElementById('hud-rows-count').textContent = (currentDataset.rows || 0).toLocaleString();
-
-      resetAllAgentsForNewRun();
       renderBottomCharacterDock();
       renderSidebarAgentsList();
       renderLeaderboardTab();
 
       try {
-        const res = await fetch(`${apiBaseUrl}/run/${currentDataset.dataset_id}?target=${encodeURIComponent(targetCol)}`, {
-          method: 'POST'
-        });
+        const res = await fetch(endpointUrl, { method: 'POST' });
         if (!res.ok) {
           const errJson = await res.json().catch(() => ({}));
           const errMsg = errJson.detail || `Server returned ${res.status}`;
           isTrainingRun = false;
-          showOfficeToast(`FastAPI /run error: ${errMsg}`, '❌');
-          addBossLog(`Grid-Master (Boss): Training failed to start — ${errMsg}`);
+          showOfficeToast(`FastAPI error: ${errMsg}`, '❌');
+          addBossLog(`Grid-Master (Boss): Run error — ${errMsg}`);
           resetAllAgentsToIdleForSelection();
-          renderBottomCharacterDock();
-          renderSidebarAgentsList();
           return;
         }
-
         const runData = await res.json();
         if (runData.problem_type) {
           currentDataset.problem_type = runData.problem_type;
           syncModelNamesWithProblemType();
         }
-        showOfficeToast(`Training ${currentDataset.filename} (Target: ${targetCol})`, '🚀');
-        startFastApiPolling(currentDataset.dataset_id);
+        showOfficeToast(`Dispatched ${packetTag} packets to ${runData.jobs ? runData.jobs.length : ''} agents!`, '🚀');
+        startFastApiPolling(currentDataset.dataset_id, runData.jobs ? runData.jobs.length : 8);
       } catch (err) {
         isTrainingRun = false;
-        showOfficeToast(`Network error calling /run: ${err.message}`, '❌');
-        addBossLog(`Grid-Master (Boss): Network error calling /run — ${err.message}`);
+        showOfficeToast(`Network error: ${err.message}`, '❌');
         resetAllAgentsToIdleForSelection();
-        renderBottomCharacterDock();
-        renderSidebarAgentsList();
       }
     }
 
@@ -2439,14 +2529,19 @@ print("Test Score:", pipe.score(X_test, y_test))`;
         .sort((a, b) => b.score - a.score);
 
       doneRanked.forEach((ag, idx) => {
-        const pos = getPodiumPosition(idx + 1);
-        ag.targetX = pos.x;
-        ag.targetY = pos.y;
+        if (idx < 3) {
+          const pos = getPodiumPosition(idx + 1);
+          ag.targetX = pos.x;
+          ag.targetY = pos.y;
+        } else {
+          const dp = getDeskPosition(ag.deskIdx, ag.floor);
+          ag.targetX = dp.x;
+          ag.targetY = dp.y;
+        }
       });
     }
 
-    // FIX #1: Failed models remain 'failed' with score = null and NEVER get fake scores or podium spots!
-    function startFastApiPolling(datasetId) {
+    function startFastApiPolling(datasetId, expectedJobCount = 8) {
       if (pollTimer) clearInterval(pollTimer);
       let seenLogIds = new Set();
 
@@ -2469,11 +2564,10 @@ print("Test Score:", pipe.score(X_test, y_test))`;
 
           if (jobsRes.ok) {
             const jobs = await jobsRes.json();
-            const activeCount = currentDataset.problem_type === 'regression' ? 4 : 5;
-            const latestJobs = jobs.slice(-activeCount);
+            const latestJobs = jobs.slice(-expectedJobCount);
 
-            latestJobs.forEach((j) => {
-              const ag = AGENT_ROSTER.find(a => a.classModel === j.model || a.regModel === j.model);
+            latestJobs.forEach((j, idx) => {
+              const ag = AGENT_ROSTER.find(a => a.classModel === j.model || a.regModel === j.model || a.modelName === j.model);
               if (!ag) return;
 
               ag.modelName = j.model;
@@ -2482,13 +2576,13 @@ print("Test Score:", pipe.score(X_test, y_test))`;
               ag.error = j.error || null;
 
               if (j.status === 'training') {
-                ag.bubble = `> ${j.current_task || 'GridSearchCV running'}`;
-                const dp = getDeskPosition(ag.deskIdx || 0);
+                ag.bubble = `⚡ ${j.current_task || 'training'}`;
+                const dp = getDeskPosition(ag.deskIdx, ag.floor);
                 ag.targetX = dp.x; ag.targetY = dp.y;
               } else if (j.status === 'queued') {
-                ag.bubble = 'awaiting';
-                const qp = getQueuePosition(ag.deskIdx || 0);
-                ag.targetX = qp.x; ag.targetY = qp.y;
+                ag.bubble = '☕ queued in lounge';
+                const lp = getCommonLoungePosition(idx);
+                ag.targetX = lp.x; ag.targetY = lp.y;
               } else if (j.status === 'done') {
                 ag.score = typeof j.score === 'number' ? j.score : null;
                 ag.metrics = j.metrics || null;
@@ -2496,7 +2590,6 @@ print("Test Score:", pipe.score(X_test, y_test))`;
                 ag.best_params = j.best_params || null;
                 ag.bubble = typeof j.score === 'number' ? `score: ${j.score.toFixed(4)}` : 'done';
               } else if (j.status === 'failed') {
-                // HONEST FAILURE STATE: No fake score, stays at desk with red failure bubble
                 ag.status = 'failed';
                 ag.score = null;
                 ag.metrics = null;
@@ -2504,9 +2597,8 @@ print("Test Score:", pipe.score(X_test, y_test))`;
                 ag.error = j.error || 'Training failed';
                 ag.current_task = 'Failed';
                 ag.bubble = `❌ Failed`;
-                const dp = getDeskPosition(ag.deskIdx || 0);
-                ag.targetX = dp.x;
-                ag.targetY = dp.y;
+                const dp = getDeskPosition(ag.deskIdx, ag.floor);
+                ag.targetX = dp.x; ag.targetY = dp.y;
               }
             });
 
@@ -2523,10 +2615,12 @@ print("Test Score:", pipe.score(X_test, y_test))`;
               isTrainingRun = false;
               document.getElementById('hud-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
 
+              if (taskModality === 'text') refreshDatasetInsightsOnly(currentDataset.target);
+
               const winner = getWinnerAgent();
               if (winner) {
                 AGENT_ROSTER[0].bubble = `🏆 Winner: ${winner.alias} (${winner.score.toFixed(4)})`;
-                showOfficeToast(`Winner: ${winner.alias} (${winner.modelName} • ${winner.score.toFixed(4)})!`, '🏆');
+                showOfficeToast(`Winner: ${winner.alias} (${winner.floor}F • ${winner.score.toFixed(4)})!`, '🏆');
                 sfx.winFanfare();
               } else {
                 AGENT_ROSTER[0].bubble = `⚠️ All models failed`;
@@ -2540,15 +2634,247 @@ print("Test Score:", pipe.score(X_test, y_test))`;
     }
 
     /********************************************************************
-     * 13. CSV UPLOAD & UI EVENT LISTENERS
+     * 15. EXPORT, LOGS, INSIGHTS, XAI & EVENT LISTENERS
      ********************************************************************/
-    function populateTargetDropdown(columns, selectedCol) {
-      const sel = document.getElementById('target-column-select');
-      if (!sel) return;
-      sel.innerHTML = columns.map(c => `<option value="${c}" ${c === selectedCol ? 'selected' : ''}>${c}</option>`).join('');
+    function addBossLog(message) {
+      const timeStr = new Date().toLocaleTimeString([], { hour12: false });
+      bossLogs.push({ id: bossLogs.length + 1, message, time: timeStr });
+      const container = document.getElementById('boss-logs-container');
+      if (!container) return;
+
+      const div = document.createElement('div');
+      const isWinner = message.startsWith('Winner:');
+      const isFailed = message.toLowerCase().includes('failed');
+      const isBoss = message.startsWith('Boss:') || message.startsWith('Grid-Master');
+      div.className = `leading-relaxed border-b border-stone-800 pb-1.5 ${
+        isWinner ? 'text-amber-300 font-bold' :
+        isFailed ? 'text-rose-400 font-semibold' :
+        isBoss ? 'text-emerald-300 font-semibold' : 'text-stone-300'
+      }`;
+      div.innerHTML = `<span class="text-stone-500">[${timeStr}]</span> ${message}`;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function renderInsightsTab() {
+      const d = currentDataset;
+      const warnBox = document.getElementById('insights-warnings-box');
+      const modeBanner = document.getElementById('insights-mode-banner');
+      if (modeBanner) modeBanner.classList.toggle('hidden', !d.filename || d.isLiveServerDataset);
+
+      if (!d.filename) {
+        warnBox.innerHTML = `<div class="p-3 rounded-xl bg-stone-100 text-stone-500 text-xs">Upload a CSV or Image ZIP file to inspect dataset diagnostics.</div>`;
+        document.getElementById('insights-stats-grid').innerHTML = '';
+        document.getElementById('insights-dropped-cols').innerHTML = `<span class="text-xs text-stone-400">—</span>`;
+        document.getElementById('insights-target-breakdown').innerHTML = `<span class="text-xs text-stone-400">No dataset active.</span>`;
+        return;
+      }
+
+      warnBox.innerHTML = (d.warnings || []).map(w => `
+        <div class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-medium flex items-start gap-2">
+          <span>⚠️</span><span>${w}</span>
+        </div>
+      `).join('');
+
+      const numCols = Array.isArray(d.columns) ? d.columns.length : (d.columns || 0);
+      document.getElementById('insights-stats-grid').innerHTML = `
+        <div class="bg-white p-2.5 rounded-xl border border-[#DFD6C0]">
+          <div class="text-[10px] font-bold uppercase text-stone-400">Samples / Rows</div>
+          <div class="font-mono-code font-extrabold text-sm text-stone-900 mt-0.5">${(d.rows || 0).toLocaleString()}</div>
+        </div>
+        <div class="bg-white p-2.5 rounded-xl border border-[#DFD6C0]">
+          <div class="text-[10px] font-bold uppercase text-stone-400">Task Type</div>
+          <div class="font-mono-code font-extrabold text-xs text-indigo-900 mt-0.5">${d.problem_type}</div>
+        </div>
+      `;
+
+      const dropContainer = document.getElementById('insights-dropped-cols');
+      if (d.dropped_columns && d.dropped_columns.length > 0) {
+        dropContainer.innerHTML = d.dropped_columns.map(c => `
+          <span class="px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-800 font-mono-code text-[11px] font-semibold">✂️ ${c}</span>
+        `).join('');
+      } else {
+        dropContainer.innerHTML = `<span class="text-xs text-stone-400">None dropped (${numCols} cols).</span>`;
+      }
+
+      const targetBox = document.getElementById('insights-target-breakdown');
+      let html = '';
+      if (d.target_info && d.target_info.balance_percent) {
+        html += `<div class="font-bold text-xs text-stone-700 mb-1.5">Class Balance (${d.target || 'Classes'}):</div>`;
+        Object.entries(d.target_info.balance_percent).forEach(([k, pct]) => {
+          html += `
+            <div class="space-y-0.5 mb-1.5">
+              <div class="flex justify-between text-[11px] font-mono-code"><span>${k}</span><span class="font-bold">${pct}%</span></div>
+              <div class="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                <div class="bg-amber-500 h-full rounded-full" style="width:${pct}%"></div>
+              </div>
+            </div>
+          `;
+        });
+      } else if (d.target_info && d.target_info.min !== undefined) {
+        html += `
+          <div class="font-bold text-xs text-stone-700 mb-1.5">Regression Target Summary (${d.target}):</div>
+          <div class="grid grid-cols-2 gap-2 font-mono-code text-xs">
+            <div>Min: <strong>${d.target_info.min}</strong></div>
+            <div>Max: <strong>${d.target_info.max}</strong></div>
+            <div>Mean: <strong>${d.target_info.mean}</strong></div>
+            <div>Median: <strong>${d.target_info.median}</strong></div>
+          </div>
+        `;
+      }
+      targetBox.innerHTML = html || `<span class="text-xs text-stone-400">Select a target column to inspect distribution.</span>`;
+    }
+
+    window.downloadWinnerJoblib = async function() {
+      const winner = getWinnerAgent();
+      if (!winner || !currentDataset.dataset_id || !liveFastApiAvailable) {
+        showOfficeToast('Train a dataset on FastAPI first to download .joblib!', '⚠️');
+        return;
+      }
+      sfx.click();
+      const dsId = currentDataset.dataset_id;
+      const defaultFileName = `dataset_${dsId}_${winner.modelName}.joblib`;
+      try {
+        const res = await fetch(`${apiBaseUrl}/download/${dsId}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = defaultFileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        sfx.winFanfare();
+        showOfficeToast(`Downloaded ${defaultFileName}!`, '⬇️');
+      } catch (err) {
+        showOfficeToast(`Download failed: ${err.message}`, '⚠️');
+      }
+    };
+
+    window.copyWinnerSklearnCode = function() {
+      const winner = getWinnerAgent() || AGENT_ROSTER[2];
+      const dsId = currentDataset.dataset_id || 1;
+      const code = `# Load your winning Podium model (${winner.alias} - ${winner.modelName})
+import joblib
+import pandas as pd
+
+pipe = joblib.load("dataset_${dsId}_${winner.modelName}.joblib")
+# Predict on new data:
+# preds = pipe.predict(new_df)`;
+      navigator.clipboard.writeText(code).then(() => {
+        sfx.winFanfare();
+        showOfficeToast(`Copied ${winner.alias} pipeline loader snippet!`, '📋');
+      });
+    };
+
+    window.openXaiModal = function() {
+      sfx.click();
+      const winner = getWinnerAgent() || AGENT_ROSTER[2];
+      const modal = document.getElementById('xai-modal');
+      document.getElementById('xai-subtitle').textContent = `Winner: ${winner.alias} (${winner.floor}F • ${winner.modelName}) • Dataset: ${currentDataset.filename || 'None'}`;
+
+      const cols = (currentDataset.columns && currentDataset.columns.length > 1)
+        ? currentDataset.columns.filter(c => c !== currentDataset.target && !(currentDataset.dropped_columns || []).includes(c)).slice(0, 8)
+        : [];
+      document.getElementById('xai-feature-bars').innerHTML = cols.length
+        ? cols.map((col, idx) => `
+            <div class="flex items-center justify-between text-xs font-mono-code bg-[#FAF6EC] px-2.5 py-1.5 rounded-lg border border-[#E5DEC9]">
+              <span class="font-bold text-stone-800 truncate pr-2">${idx + 1}. ${col}</span>
+              <span class="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">Active</span>
+            </div>
+          `).join('')
+        : `<div class="text-xs text-stone-400 py-4 text-center">${currentDataset.problem_type === 'image_classification' ? '64x64x3 RGB Image Tensors' : 'Upload CSV to view columns'}</div>`;
+
+      const matrixBox = document.getElementById('xai-matrix-box');
+      if (!winner || typeof winner.score !== 'number') {
+        matrixBox.innerHTML = `<div class="text-xs text-stone-400 py-4 text-center">Run Podium training first to inspect test metrics.</div>`;
+      } else if (currentDataset.problem_type === 'regression') {
+        const r2Val = winner.metrics?.r2 !== undefined ? winner.metrics.r2.toFixed(4) : winner.score.toFixed(4);
+        const rmseVal = winner.metrics?.rmse !== undefined ? winner.metrics.rmse.toFixed(4) : '—';
+        matrixBox.innerHTML = `
+          <div class="grid grid-cols-2 gap-2 font-mono-code text-xs pt-1">
+            <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200"><div class="text-[10px] text-emerald-700 font-bold">R² Score</div><div class="text-base font-black text-emerald-900">${r2Val}</div></div>
+            <div class="p-2.5 rounded-lg bg-amber-50 border border-amber-200"><div class="text-[10px] text-amber-800 font-bold">RMSE</div><div class="text-base font-black text-amber-950">${rmseVal}</div></div>
+          </div>
+        `;
+      } else {
+        const f1Val = winner.metrics?.f1 !== undefined ? winner.metrics.f1.toFixed(4) : winner.score.toFixed(4);
+        const accVal = winner.metrics?.accuracy !== undefined ? winner.metrics.accuracy.toFixed(4) : '—';
+        matrixBox.innerHTML = `
+          <div class="grid grid-cols-2 gap-2 text-center font-mono-code text-xs pt-1">
+            <div class="p-2.5 rounded-xl bg-emerald-50 border-2 border-emerald-300"><div class="text-[10px] font-bold text-emerald-700">WEIGHTED F1</div><div class="text-lg font-black text-emerald-900">${f1Val}</div></div>
+            <div class="p-2.5 rounded-xl bg-indigo-50 border-2 border-indigo-200"><div class="text-[10px] font-bold text-indigo-700">ACCURACY</div><div class="text-lg font-black text-indigo-900">${accVal}</div></div>
+          </div>
+        `;
+      }
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+
+    window.closeXaiModal = function() {
+      const modal = document.getElementById('xai-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+
+    window.renderHeadToHeadComparison = function() {
+      const card = document.getElementById('head-to-head-card');
+      const selA = document.getElementById('compare-model-a');
+      const selB = document.getElementById('compare-model-b');
+      const body = document.getElementById('compare-metrics-body');
+      if (!card || !selA || !selB || !body) return;
+
+      const doneModels = getActiveAgentsForProblem()
+        .filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number')
+        .sort((a, b) => b.score - a.score);
+
+      if (doneModels.length < 2) {
+        card.classList.add('hidden');
+        return;
+      }
+      card.classList.remove('hidden');
+
+      const prevA = selA.value;
+      const prevB = selB.value;
+      const opts = doneModels.map(m => `<option value="${m.id}">${m.alias} (${m.floor}F)</option>`).join('');
+      selA.innerHTML = opts;
+      selB.innerHTML = opts;
+
+      selA.value = doneModels.some(m => m.id === prevA) ? prevA : doneModels[0].id;
+      selB.value = doneModels.some(m => m.id === prevB && prevB !== selA.value)
+        ? prevB
+        : (doneModels[1] ? doneModels[1].id : doneModels[0].id);
+
+      const mA = doneModels.find(m => m.id === selA.value) || doneModels[0];
+      const mB = doneModels.find(m => m.id === selB.value) || doneModels[1];
+      const faster = (mA.seconds || 1) <= (mB.seconds || 1) ? mA : mB;
+      const bestAcc = mA.score >= mB.score ? mA : mB;
+
+      body.innerHTML = `
+        <div class="grid grid-cols-2 gap-2 font-mono-code text-[11px] bg-[#FAF6EC] p-2 rounded-lg border border-[#E5DEC9]">
+          <div><div class="font-bold text-stone-800">${mA.alias} (${mA.floor}F)</div><div class="text-emerald-700 font-extrabold">Score: ${mA.score.toFixed(4)}</div><div class="text-stone-500">Time: ${mA.seconds}s</div></div>
+          <div class="border-l border-[#DFD6C0] pl-2"><div class="font-bold text-stone-800">${mB.alias} (${mB.floor}F)</div><div class="text-emerald-700 font-extrabold">Score: ${mB.score.toFixed(4)}</div><div class="text-stone-500">Time: ${mB.seconds}s</div></div>
+        </div>
+        <div class="text-[11px] text-stone-600">💡 <strong>${bestAcc.alias}</strong> leads in accuracy; <strong>${faster.alias}</strong> is fastest (${faster.seconds}s).</div>
+      `;
+    };
+
+    function populateColumnDropdowns(columns, defaultTarget) {
+      const tgtSel = document.getElementById('target-column-select');
+      const txtSel = document.getElementById('text-column-select');
+      if (tgtSel) {
+        tgtSel.innerHTML = columns.map(c => `<option value="${c}" ${c === defaultTarget ? 'selected' : ''}>${c}</option>`).join('');
+      }
+      if (txtSel) {
+        const defaultTxt = columns[0] !== defaultTarget ? columns[0] : (columns[1] || columns[0]);
+        txtSel.innerHTML = columns.map(c => `<option value="${c}" ${c === defaultTxt ? 'selected' : ''}>${c}</option>`).join('');
+      }
     }
 
     function bindAllEvents() {
+      // 1. CSV Upload (/upload)
       const csvInput = document.getElementById('csv-file-input');
       if (csvInput) {
         csvInput.addEventListener('change', async (e) => {
@@ -2556,15 +2882,13 @@ print("Test Score:", pipe.score(X_test, y_test))`;
           if (!file) return;
           document.getElementById('upload-filename-label').textContent = file.name;
           sfx.click();
-
-          // Re-check backend availability before upload
           await detectFastApiBackend();
 
           if (liveFastApiAvailable) {
             try {
-              const formData = new FormData();
-              formData.append('file', file);
-              const res = await fetch(`${apiBaseUrl}/upload`, { method: 'POST', body: formData });
+              const fd = new FormData();
+              fd.append('file', file);
+              const res = await fetch(`${apiBaseUrl}/upload`, { method: 'POST', body: fd });
               if (res.ok) {
                 const info = await res.json();
                 const defaultTarget = info.columns[info.columns.length - 1];
@@ -2574,78 +2898,91 @@ print("Test Score:", pipe.score(X_test, y_test))`;
                   rows: info.rows,
                   columns: info.columns,
                   target: defaultTarget,
-                  problem_type: 'classification',
-                  numeric_features: 0,
-                  text_features: 0,
+                  problem_type: taskModality === 'text' ? 'text_classification' : 'classification',
                   dropped_columns: [],
                   warnings: [],
                   isLiveServerDataset: true,
-                  isSimulatedDemo: false,
-                  rawParsedRows: null,
-                  rawHeaders: null
+                  isSimulatedDemo: false
                 };
-                populateTargetDropdown(info.columns, defaultTarget);
-
-                // FIX #2: Only fetch insights on upload; wait for user to verify Target & click "🚀 Run Podium"!
+                populateColumnDropdowns(info.columns, defaultTarget);
                 await refreshDatasetInsightsOnly(defaultTarget);
-                addBossLog(`Grid-Master (Boss): Uploaded '${info.filename}' (${info.rows} rows). Confirm Target column ('${defaultTarget}') and click '🚀 Run Podium' to start training.`);
-                showOfficeToast(`Uploaded ${info.filename}! Pick Target & click 🚀 Run Podium.`, '📂');
+                dispatchBossFileTransferWave('CSV');
+                addBossLog(`Grid-Master (Boss): Uploaded '${info.filename}' (${info.rows} rows). Click '🚀 Run Podium' to start 1F ML & 2F DL training.`);
+                showOfficeToast(`Uploaded ${info.filename}! Click 🚀 Run Podium to train.`, '📂');
                 return;
               } else {
-                const errData = await res.json().catch(() => ({}));
-                showOfficeToast(errData.detail || 'CSV Upload rejected by FastAPI', '❌');
+                const err = await res.json().catch(() => ({}));
+                showOfficeToast(err.detail || 'Upload failed', '❌');
                 return;
               }
             } catch (_) {}
           }
-
-          // FIX #4: Client-side CSV preview with REAL computed insights & explicit DEMO label (does NOT auto-train)
-          const text = await file.text();
-          const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-          if (lines.length < 2) {
-            showOfficeToast('CSV file is empty or invalid', '⚠️');
-            return;
-          }
-          const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-          const parsedRows = lines.slice(1).map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
-          const defaultTarget = headers[headers.length - 1];
-
-          currentDataset = {
-            dataset_id: null,
-            filename: file.name,
-            columns: headers,
-            target: defaultTarget,
-            isLiveServerDataset: false,
-            isSimulatedDemo: true,
-            rawHeaders: headers,
-            rawParsedRows: parsedRows
-          };
-
-          populateTargetDropdown(headers, defaultTarget);
-          await refreshDatasetInsightsOnly(defaultTarget);
-          addBossLog(`[DEMO PREVIEW] Parsed '${file.name}' (${parsedRows.length} rows) in browser because FastAPI backend is offline.`);
-          showOfficeToast(`Previewing ${file.name} (Offline Mode). Start FastAPI to train!`, '⚠️');
+          showOfficeToast('FastAPI backend offline — start uvicorn main:app to upload!', '⚠️');
         });
       }
 
-      // FIX #2: Changing Target dropdown ONLY updates insights & problem type; NEVER auto-starts training!
+      // 2. Vision Image ZIP Upload (/upload-images)
+      const zipInput = document.getElementById('zip-file-input');
+      if (zipInput) {
+        zipInput.addEventListener('change', async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          document.getElementById('upload-zip-label').textContent = file.name;
+          sfx.click();
+          await detectFastApiBackend();
+
+          if (!liveFastApiAvailable) {
+            showOfficeToast('Start FastAPI server to upload image .zip datasets!', '⚠️');
+            return;
+          }
+
+          try {
+            const fd = new FormData();
+            fd.append('file', file);
+            showOfficeToast(`Extracting ${file.name}...`, '🗜️');
+            const res = await fetch(`${apiBaseUrl}/upload-images`, { method: 'POST', body: fd });
+            if (res.ok) {
+              const info = await res.json();
+              currentDataset = {
+                dataset_id: info.dataset_id,
+                filename: info.filename,
+                rows: info.images,
+                columns: Object.keys(info.classes || {}),
+                target: 'folder name',
+                problem_type: 'image_classification',
+                classes: info.classes,
+                dropped_columns: [],
+                warnings: [],
+                isLiveServerDataset: true,
+                isSimulatedDemo: false
+              };
+              switchFloor(2);
+              await refreshDatasetInsightsOnly('folder name');
+              dispatchBossFileTransferWave('ZIP');
+              addBossLog(`Grid-Master (Boss): Uploaded image dataset '${info.filename}' (${info.images} images across ${Object.keys(info.classes).length} classes). Click '🚀 Run Podium'!`);
+              showOfficeToast(`Loaded ${info.images} images! Click 🚀 Run Podium.`, '🖼️');
+            } else {
+              const err = await res.json().catch(() => ({}));
+              showOfficeToast(err.detail || 'ZIP Upload rejected', '❌');
+            }
+          } catch (err) {
+            showOfficeToast(`ZIP upload error: ${err.message}`, '❌');
+          }
+        });
+      }
+
       const targetSel = document.getElementById('target-column-select');
       if (targetSel) {
         targetSel.addEventListener('change', async () => {
           if (!currentDataset.filename) return;
           sfx.click();
-          const newTarget = targetSel.value;
-          await refreshDatasetInsightsOnly(newTarget);
-          addBossLog(`Grid-Master (Boss): Target column changed to '${newTarget}' (${currentDataset.problem_type}). Click '🚀 Run Podium' when ready.`);
-          showOfficeToast(`Target set to '${newTarget}'. Click 🚀 Run Podium to train!`, '🎯');
+          await refreshDatasetInsightsOnly(targetSel.value);
         });
       }
 
-      const btnXai = document.getElementById('btn-open-xai');
-      if (btnXai) btnXai.addEventListener('click', openXaiModal);
-
-      const btnSandbox = document.getElementById('btn-open-sandbox');
-      if (btnSandbox) btnSandbox.addEventListener('click', openPredictionSandboxModal);
+      document.getElementById('btn-open-xai')?.addEventListener('click', openXaiModal);
+      document.getElementById('btn-open-sandbox')?.addEventListener('click', openPredictionSandboxModal);
+      document.getElementById('btn-run-podium')?.addEventListener('click', triggerPodiumTrainingRun);
 
       document.querySelectorAll('.sidebar-tab').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -2658,74 +2995,51 @@ print("Test Score:", pipe.score(X_test, y_test))`;
             }`;
           });
           ['agents', 'leaderboard', 'logs', 'insights'].forEach(t => {
-            const el = document.getElementById(`tab-content-${t}`);
-            if (el) el.classList.toggle('hidden', t !== targetTab);
+            document.getElementById(`tab-content-${t}`)?.classList.toggle('hidden', t !== targetTab);
           });
         });
       });
 
-      const btnRun = document.getElementById('btn-run-podium');
-      if (btnRun) btnRun.addEventListener('click', triggerPodiumTrainingRun);
-
-      const btnStandup = document.getElementById('btn-standup');
-      if (btnStandup) {
-        btnStandup.addEventListener('click', () => {
-          sfx.dispatch();
-          const conf = getOfficeZones().confTable;
-          showOfficeToast('Grid-Master called a Standup around the Conference Table!', '📋');
-          getActiveAgentsForProblem().forEach((ag, i) => {
-            ag.targetX = conf.x + 28 + (i % 3) * 65;
-            ag.targetY = conf.y + (i < 3 ? -18 : conf.h + 24);
-            ag.bubble = '< reviewing CV folds';
-          });
+      document.getElementById('btn-standup')?.addEventListener('click', () => {
+        sfx.dispatch();
+        const conf = getOfficeZones().confTable;
+        showOfficeToast(`Standup called on ${currentFloor}F Conference Table!`, '📋');
+        getAgentsVisibleOnCurrentFloor().forEach((ag, i) => {
+          ag.targetX = conf.x + 25 + (i % 3) * 62;
+          ag.targetY = conf.y + (i < 3 ? -18 : conf.h + 24);
+          ag.bubble = '< reviewing CV folds';
         });
-      }
+      });
 
-      const btnQueue = document.getElementById('btn-queue-lounge');
-      if (btnQueue) {
-        btnQueue.addEventListener('click', () => {
-          sfx.click();
-          showOfficeToast('Models taking a coffee break in the Kitchen!', '☕');
-          getActiveAgentsForProblem().filter(a => !a.isBoss).forEach((ag, i) => {
-            const qp = getQueuePosition(i);
-            ag.targetX = qp.x;
-            ag.targetY = qp.y;
-            ag.bubble = '< grabbing espresso ☕';
-          });
+      document.getElementById('btn-queue-lounge')?.addEventListener('click', () => {
+        sfx.click();
+        showOfficeToast('Agents relaxing in the Common Coffee & Seating Lounge!', '☕');
+        getAgentsVisibleOnCurrentFloor().filter(a => !a.isBoss).forEach((ag, i) => {
+          const lp = getCommonLoungePosition(i);
+          ag.targetX = lp.x;
+          ag.targetY = lp.y;
+          ag.bubble = i % 2 === 0 ? '< sipping espresso ☕' : '< chilling on sofa 🛋️';
         });
-      }
+      });
 
-      const btnDesks = document.getElementById('btn-desks');
-      if (btnDesks) {
-        btnDesks.addEventListener('click', () => {
-          sfx.click();
-          showOfficeToast('All models back at their computer workstations!', '💻');
-          repositionAllDesksOnResize();
-          AGENT_ROSTER.forEach((ag, idx) => {
-            if (!ag.isBoss) ag.bubble = AMBIENT_BUBBLES[idx % AMBIENT_BUBBLES.length];
-          });
-        });
-      }
+      document.getElementById('btn-desks')?.addEventListener('click', () => {
+        sfx.click();
+        showOfficeToast('All models back at their workstations!', '💻');
+        repositionAllDesksOnResize();
+      });
 
-      const btnPodium = document.getElementById('btn-podium-ceremony');
-      if (btnPodium) {
-        btnPodium.addEventListener('click', () => {
-          sfx.winFanfare();
-          showOfficeToast('Models assembling on the Podium Ramp!', '🏆');
-          positionDoneModelsOnPodium();
-        });
-      }
+      document.getElementById('btn-podium-ceremony')?.addEventListener('click', () => {
+        sfx.winFanfare();
+        showOfficeToast('Top models assembling on the Podium Ramp!', '🏆');
+        positionDoneModelsOnPodium();
+      });
 
-      const searchInput = document.getElementById('agent-search-input');
-      if (searchInput) searchInput.addEventListener('input', renderSidebarAgentsList);
+      document.getElementById('agent-search-input')?.addEventListener('input', renderSidebarAgentsList);
 
-      const btnSound = document.getElementById('btn-sound');
-      if (btnSound) {
-        btnSound.addEventListener('click', (e) => {
-          sfx.enabled = !sfx.enabled;
-          e.currentTarget.textContent = sfx.enabled ? '🔊' : '🔇';
-        });
-      }
+      document.getElementById('btn-sound')?.addEventListener('click', (e) => {
+        sfx.enabled = !sfx.enabled;
+        e.currentTarget.textContent = sfx.enabled ? '🔊' : '🔇';
+      });
 
       if (canvas) {
         canvas.addEventListener('click', (e) => {
@@ -2733,6 +3047,14 @@ print("Test Score:", pipe.score(X_test, y_test))`;
           const cx = e.clientX - rect.left;
           const cy = e.clientY - rect.top;
 
+          // Click Elevator Door or Welcome Mat on Top Wall to toggle between 1F and 2F!
+          const el = getOfficeZones().elevatorDoor;
+          if (cx >= el.x - 8 && cx <= el.x + el.w + 8 && cy >= el.y - 16 && cy <= el.y + el.h + 48) {
+            switchFloor(currentFloor === 1 ? 2 : 1);
+            return;
+          }
+
+          // Click Corkboard to open XAI Modal
           const cb = getOfficeZones().corkboard;
           if (cx >= cb.x && cx <= cb.x + cb.w && cy >= cb.y && cy <= cb.y + cb.h) {
             openXaiModal();
@@ -2740,7 +3062,7 @@ print("Test Score:", pipe.score(X_test, y_test))`;
           }
 
           let clicked = null;
-          for (const ag of getActiveAgentsForProblem()) {
+          for (const ag of getAgentsVisibleOnCurrentFloor()) {
             if (Math.hypot(ag.x - cx, ag.y - cy) < 26) {
               clicked = ag;
               break;
@@ -2755,7 +3077,7 @@ print("Test Score:", pipe.score(X_test, y_test))`;
           } else if (selectedAgent) {
             selectedAgent.targetX = Math.max(45, Math.min(cw - 45, cx));
             selectedAgent.targetY = Math.max(55, Math.min(ch - 35, cy));
-            selectedAgent.bubble = '@ heading to target';
+            selectedAgent.bubble = '@ heading to spot';
             sfx.click();
           }
         });
@@ -2775,9 +3097,6 @@ print("Test Score:", pipe.score(X_test, y_test))`;
       }, 3200);
     }
 
-    /********************************************************************
-     * 14. MAIN ANIMATION LOOP & WINDOW ONLOAD
-     ********************************************************************/
     function animateLoop() {
       globalTick++;
       tickOfficeWallClock();
@@ -2797,7 +3116,7 @@ print("Test Score:", pipe.score(X_test, y_test))`;
       repositionAllDesksOnResize();
       tickOfficeWallClock();
 
-      addBossLog("Grid-Master (Boss): Podium AutoML office initialized. Upload a .csv dataset, select your Target column, and click '🚀 Run Podium'.");
+      addBossLog("Grid-Master (Boss): Multi-Floor Podium AI initialized! 1F: Classical ML Bullpen (Ned-KNN, Forrest-RF, Bayes-NB, Lin-Reg, Victor-SVM) + 2F: Deep Learning GPU Lab (Anna-ANN, Connie-CNN, Rory-RNN, Lexi-TextCNN).");
 
       renderBottomCharacterDock();
       renderSidebarAgentsList();
