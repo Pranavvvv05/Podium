@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from ml.predict import feature_schema, run_prediction
 from ml.vision import (extract_zip, scan_folder, prepare_image_data,
                        get_image_models, image_worker, load_image)
+from ml.nlp import (write_text_csv, prepare_text_data, get_text_models, text_worker)
 import pickle
 import shutil
 import zipfile
@@ -111,8 +112,20 @@ IMAGE_TYPE = "image_classification"
 MAX_ZIP_MB = 200
 
 
+TEXT_TYPE = "text_classification"
+DEEP_TYPES = (IMAGE_TYPE, TEXT_TYPE)
+
+
+def text_data_path(dataset) -> str:
+    return dataset.file_path + ".text.csv"
+
+
 def models_for(problem_type: str) -> dict:
-    return get_image_models() if problem_type == IMAGE_TYPE else get_models(problem_type)
+    if problem_type == IMAGE_TYPE:
+        return get_image_models()
+    if problem_type == TEXT_TYPE:
+        return get_text_models()
+    return get_models(problem_type)
 
 
 def count_trainings(problem_type: str, model_name: str) -> int:
@@ -129,12 +142,15 @@ def run_jobs(dataset_id: int):
     db = SessionLocal()  
     try:
         dataset = db.get(models.Dataset, dataset_id)
-        is_image = dataset.problem_type == IMAGE_TYPE
-        if is_image:
+        if dataset.problem_type == IMAGE_TYPE:
             data = prepare_image_data(dataset.file_path)
+            work = image_worker
+        elif dataset.problem_type == TEXT_TYPE:
+            data = prepare_text_data(text_data_path(dataset))
+            work = text_worker
         else:
             data = prepare_data(dataset.file_path, dataset.target_column)
-        work = image_worker if is_image else worker
+            work = worker
         waiting = (
             db.query(models.Job)
             .filter_by(dataset_id=dataset_id, status="queued")
@@ -347,6 +363,43 @@ def run_image_dataset(dataset_id: int, background_tasks: BackgroundTasks,
     }
 
 
+@app.post("/run-text/{dataset_id}")
+def run_text_dataset(dataset_id: int, text_column: str, label_column: str,
+                     background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """Use a CSV uploaded with /upload: pick the text column and the label column."""
+    dataset = db.get(models.Dataset, dataset_id)
+    if dataset is None or dataset.problem_type == IMAGE_TYPE:
+        raise HTTPException(status_code=404, detail="CSV dataset not found")
+    try:
+        counts = write_text_csv(dataset.file_path, text_column, label_column,
+                                dataset.file_path + ".text.csv")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    dataset.target_column = label_column
+    dataset.problem_type = TEXT_TYPE
+    dataset.n_features = 1
+    jobs = []
+    for name in get_text_models():
+        job = models.Job(dataset_id=dataset.id, model_name=name, status="queued",
+                         current_task="Waiting in line")
+        db.add(job)
+        jobs.append(job)
+    db.add(models.BossLog(
+        dataset_id=dataset.id,
+        message=f"Boss: new text project '{dataset.filename}' (text: {text_column}, "
+                f"label: {label_column}, {len(counts)} classes). {len(jobs)} employees assigned.",
+    ))
+    db.commit()
+    background_tasks.add_task(run_jobs, dataset.id)
+    return {
+        "dataset_id": dataset.id,
+        "problem_type": TEXT_TYPE,
+        "classes": counts,
+        "jobs": [{"job_id": j.id, "model": j.model_name, "status": j.status} for j in jobs],
+    }
+
+
 @app.get("/jobs/{dataset_id}")
 def get_jobs(dataset_id: int, db: Session = Depends(get_db)):
     dataset = db.get(models.Dataset, dataset_id)
@@ -429,6 +482,17 @@ def get_insights(dataset_id: int, target: str | None = None,
             "classes": {k: len(v) for k, v in classes.items()},
             "balance_percent": {k: round(len(v) / total * 100, 1) for k, v in classes.items()},
             "warnings": ["Small dataset (under 300 images): scores can vary a lot."] if total < 300 else [],
+        }
+
+    if dataset.problem_type == TEXT_TYPE:
+        tdf = pd.read_csv(text_data_path(dataset))
+        share = (tdf["label"].value_counts(normalize=True) * 100).round(1)
+        return {
+            "rows": len(tdf),
+            "classes": {str(k): int(v) for k, v in tdf["label"].value_counts().items()},
+            "balance_percent": {str(k): float(v) for k, v in share.items()},
+            "avg_words": round(float(tdf["text"].str.split().str.len().mean()), 1),
+            "warnings": ["Small dataset (under 500 rows): scores can vary a lot."] if len(tdf) < 500 else [],
         }
 
     df = pd.read_csv(dataset.file_path)
@@ -523,8 +587,8 @@ def get_features(dataset_id: int, db: Session = Depends(get_db)):
     """Which inputs the winning model needs (used to build the prediction form)."""
     winner = latest_winner(db, dataset_id)
     dataset = db.get(models.Dataset, dataset_id)
-    if dataset.problem_type == IMAGE_TYPE:
-        raise HTTPException(status_code=400, detail="This is an image model: use /predict-image")
+    if dataset.problem_type in DEEP_TYPES:
+        raise HTTPException(status_code=400, detail="This is an image/text model: use /predict-image or /predict-text")
     pipe = joblib.load(winner.model_path)
     return {
         "model": winner.model_name,
@@ -544,8 +608,8 @@ def predict(dataset_id: int, req: PredictRequest, db: Session = Depends(get_db))
     """Real prediction from the winning model for one row of input values."""
     winner = latest_winner(db, dataset_id)
     dataset = db.get(models.Dataset, dataset_id)
-    if dataset.problem_type == IMAGE_TYPE:
-        raise HTTPException(status_code=400, detail="This is an image model: use /predict-image")
+    if dataset.problem_type in DEEP_TYPES:
+        raise HTTPException(status_code=400, detail="This is an image/text model: use /predict-image or /predict-text")
     pipe = joblib.load(winner.model_path)
     try:
         result = run_prediction(pipe, req.row, dataset.problem_type)
@@ -579,6 +643,32 @@ def predict_image(dataset_id: int, file: UploadFile = File(...), db: Session = D
         "model": winner.model_name,
         "score": winner.score,
         "problem_type": IMAGE_TYPE,
+        "prediction": classes[best],
+        "probabilities": {c: round(float(p), 4) for c, p in zip(classes, proba)},
+    }
+
+
+class TextRequest(BaseModel):
+    text: str
+
+
+@app.post("/predict-text/{dataset_id}")
+def predict_text(dataset_id: int, req: TextRequest, db: Session = Depends(get_db)):
+    """Real prediction from the winning text model for one sentence."""
+    winner = latest_winner(db, dataset_id)
+    dataset = db.get(models.Dataset, dataset_id)
+    if dataset.problem_type != TEXT_TYPE:
+        raise HTTPException(status_code=400, detail="This is not a text model")
+    if not req.text.strip():
+        raise HTTPException(status_code=400, detail="Text is empty")
+    pipe = joblib.load(winner.model_path)
+    proba = pipe.predict_proba([req.text])[0]
+    classes = [str(c) for c in pipe.classes_]
+    best = int(proba.argmax())
+    return {
+        "model": winner.model_name,
+        "score": winner.score,
+        "problem_type": TEXT_TYPE,
         "prediction": classes[best],
         "probabilities": {c: round(float(p), 4) for c, p in zip(classes, proba)},
     }

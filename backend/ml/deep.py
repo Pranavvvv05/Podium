@@ -1,3 +1,5 @@
+import re
+from collections import Counter
 import numpy as np
 import torch
 import torch.nn as nn
@@ -73,14 +75,14 @@ class _TorchBase(BaseEstimator):
     def _train(self, X, y, n_out, loss_fn):
         torch.set_num_threads(1)
         torch.manual_seed(42)
-        X = torch.tensor(np.asarray(X, dtype=np.float32))
+        X = X if torch.is_tensor(X) else torch.tensor(np.asarray(X, dtype=np.float32))
         y = torch.tensor(y)
         idx = np.arange(len(X))
         if len(X) >= 50:
             tr, va = train_test_split(idx, test_size=0.1, random_state=42)
         else:
             tr, va = idx, idx
-        net = _ARCHS[self.arch](X.shape[1], n_out)
+        net = self._build_net(X, n_out)
         opt = torch.optim.Adam(net.parameters(), lr=self.lr)
         best, best_state, wait = float("inf"), None, 0
         for _ in range(self.epochs):
@@ -106,8 +108,11 @@ class _TorchBase(BaseEstimator):
         net.eval()
         self.net_ = net
 
+    def _build_net(self, X, n_out):
+        return _ARCHS[self.arch](X.shape[1], n_out)
+
     def _forward(self, X):
-        X = torch.tensor(np.asarray(X, dtype=np.float32))
+        X = X if torch.is_tensor(X) else torch.tensor(np.asarray(X, dtype=np.float32))
         with torch.no_grad():
             return self.net_(X)
 
@@ -153,4 +158,60 @@ class TorchImageClassifier(TorchClassifier):
 
     def predict_proba(self, X):
         return super().predict_proba(self._prep(X))
-    
+
+
+class _GRUText(nn.Module):
+    def __init__(self, vocab_size, n_out):
+        super().__init__()
+        self.emb = nn.Embedding(vocab_size, 64, padding_idx=0)
+        self.gru = nn.GRU(64, 64, batch_first=True, bidirectional=True)
+        self.head = nn.Sequential(nn.Dropout(0.2), nn.Linear(128, n_out))
+
+    def forward(self, x):
+        _, h = self.gru(self.emb(x))
+        return self.head(torch.cat([h[0], h[1]], dim=1))
+
+
+class _TextCNN(nn.Module):
+    def __init__(self, vocab_size, n_out):
+        super().__init__()
+        self.emb = nn.Embedding(vocab_size, 64, padding_idx=0)
+        self.convs = nn.ModuleList([nn.Conv1d(64, 32, k, padding=k // 2) for k in (3, 4, 5)])
+        self.head = nn.Sequential(nn.Dropout(0.2), nn.Linear(96, n_out))
+
+    def forward(self, x):
+        e = self.emb(x).transpose(1, 2)
+        pooled = [torch.relu(c(e)).max(dim=2).values for c in self.convs]
+        return self.head(torch.cat(pooled, dim=1))
+
+
+_TEXT_ARCHS = {"gru": _GRUText, "textcnn": _TextCNN}
+_WORD = re.compile(r"[a-z0-9']+")
+
+
+class TorchTextClassifier(TorchClassifier):
+    """RNN (GRU) or TextCNN for text. Input X: list/array of strings."""
+
+    def __init__(self, arch="gru", lr=0.003, epochs=15, batch_size=32, patience=4,
+                 max_words=8000, max_len=100):
+        super().__init__(arch=arch, lr=lr, epochs=epochs, batch_size=batch_size, patience=patience)
+        self.max_words = max_words
+        self.max_len = max_len
+
+    def _encode(self, X):
+        out = np.zeros((len(X), self.max_len), dtype=np.int64)
+        for i, text in enumerate(X):
+            ids = [self.vocab_.get(w, 1) for w in _WORD.findall(str(text).lower())][: self.max_len]
+            out[i, : len(ids)] = ids
+        return torch.tensor(out)
+
+    def _build_net(self, X, n_out):
+        return _TEXT_ARCHS[self.arch](len(self.vocab_) + 2, n_out)
+
+    def fit(self, X, y):
+        counts = Counter(w for t in X for w in _WORD.findall(str(t).lower()))
+        self.vocab_ = {w: i + 2 for i, (w, _) in enumerate(counts.most_common(self.max_words))}
+        return super().fit(self._encode(X), y)
+
+    def predict_proba(self, X):
+        return super().predict_proba(self._encode(X))
