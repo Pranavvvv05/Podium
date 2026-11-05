@@ -413,7 +413,7 @@
   <div id="sandbox-modal" class="fixed inset-0 bg-stone-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
     <div class="bg-[#FAF6EC] border-2 border-stone-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-[#DFD6C0] pb-3">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center justify-between gap-2">
           <span class="text-xl">🔮</span>
           <div>
             <h3 class="font-extrabold text-sm text-stone-900">Live Winner Inference Sandbox</h3>
@@ -798,7 +798,7 @@
         displayRole: 'Multi-Kernel NLP ConvNet',
         isBoss: false,
         floor: 2,
-        deskIdx: 3,
+        deskIdx: 1,
         modelName: 'TextCNN',
         classModel: 'TextCNN',
         regModel: 'TextCNN',
@@ -814,7 +814,7 @@
         tieColor: '#F59E0B',
         auraColor: 'rgba(245, 158, 11, 0.32)',
         accessory: 'hat',
-        x: 565, y: 332, targetX: 565, targetY: 332
+        x: 280, y: 332, targetX: 280, targetY: 332
       }
     ];
 
@@ -901,7 +901,7 @@
 
     function getOfficeZones() {
       return {
-        bossDesk: { x: 96, y: 120 },
+        bossDesk: { x: 96, y: 145 },
         elevatorDoor: { x: 470, y: 18, w: 112, h: 74 },
         confTable: { x: 225, y: 96, w: 205, h: 64 },
         podiumCenter: { x: cw - 150, y: 145 },
@@ -912,9 +912,9 @@
     }
 
     function getDeskPosition(deskIdx, floorNum = 1) {
-      const leftMargin = floorNum === 2 ? 115 : 95;
-      const count = floorNum === 2 ? 4 : 5;
-      const usableWidth = Math.min(520, cw - 295);
+      const leftMargin = floorNum === 2 ? 140 : 95;
+      const count = floorNum === 2 ? 3 : 5;
+      const usableWidth = floorNum === 2 ? Math.min(380, cw - 360) : Math.min(520, cw - 295);
       const stepX = usableWidth / Math.max(1, count - 1);
       return {
         x: Math.round(leftMargin + deskIdx * stepX),
@@ -949,8 +949,8 @@
     function repositionAllDesksOnResize() {
       AGENT_ROSTER.forEach((ag) => {
         if (ag.isBoss) {
-          ag.x = 96; ag.y = 120;
-          ag.targetX = 96; ag.targetY = 120;
+          ag.x = 96; ag.y = 142;
+          ag.targetX = 96; ag.targetY = 142;
         } else {
           const dp = getDeskPosition(ag.deskIdx, ag.floor);
           ag.x = dp.x; ag.y = dp.y;
@@ -1009,6 +1009,15 @@
     /********************************************************************
      * 6. TASK MODALITY SWITCHER (TABULAR CSV | NLP TEXT | VISION ZIP)
      ********************************************************************/
+    function ensureValidSelectedAgent() {
+      const active = getActiveAgentsForProblem();
+      const nonBossActive = active.filter(a => !a.isBoss);
+      if (!selectedAgent || selectedAgent.isBoss || !nonBossActive.some(a => a.id === selectedAgent.id)) {
+        selectedAgent = nonBossActive[0] || active[0] || null;
+      }
+      updateSelectedAgentFooter();
+    }
+
     window.switchTaskModality = function(mode) {
       taskModality = mode;
       sfx.click();
@@ -1055,6 +1064,7 @@
       }
 
       syncModelNamesWithProblemType();
+      ensureValidSelectedAgent();
       renderBottomCharacterDock();
       renderSidebarAgentsList();
     };
@@ -1623,15 +1633,16 @@
       }
 
       // Boss Command Desk (Top Left)
-      draw3PlankComputerDesk(96, 145, false, true, isFloor2);
+      draw3PlankComputerDesk(96, 167, false, true, isFloor2);
 
-      // Employee Workstations for Current Floor
-      const floorWorkers = AGENT_ROSTER.filter(a => !a.isBoss && a.floor === currentFloor);
-      floorWorkers.forEach((emp) => {
-        const dp = getDeskPosition(emp.deskIdx, currentFloor);
-        const isSeatedHere = Math.hypot(emp.x - dp.x, emp.y - dp.y) < 14;
+      // Employee Workstations for Current Floor (5 desks on 1F, 3 desks on 2F)
+      const deskCount = isFloor2 ? 3 : 5;
+      const visibleFloorWorkers = getAgentsVisibleOnCurrentFloor().filter(a => !a.isBoss && a.floor === currentFloor);
+      for (let dIdx = 0; dIdx < deskCount; dIdx++) {
+        const dp = getDeskPosition(dIdx, currentFloor);
+        const isSeatedHere = visibleFloorWorkers.some(emp => Math.hypot(emp.x - dp.x, emp.y - dp.y) < 14);
         draw3PlankComputerDesk(dp.x, dp.y - 26, isSeatedHere, false, isFloor2);
-      });
+      }
     }
 
     /********************************************************************
@@ -1788,6 +1799,11 @@
       if (!domOverlay) return;
 
       const visibleAgents = getAgentsVisibleOnCurrentFloor();
+      const top3List = getActiveAgentsForProblem()
+        .filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number')
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+      const podiumRankById = new Map(top3List.map((a, idx) => [a.id, idx + 1]));
 
       // Autonomous Coffee Bar & Plush Seating Lounge Mingling when Idle
       if (!isTrainingRun && globalTick % 210 === 0) {
@@ -1846,10 +1862,17 @@
         const isFailed = ag.status === 'failed';
         const isDL = ag.floor === 2;
         const bubbleText = ag.bubble || ag.current_task || 'awaiting';
+        const pRank = podiumRankById.get(ag.id) || 0;
+        const onPodium = pRank > 0 && Math.hypot(ag.x - getPodiumPosition(pRank).x, ag.y - getPodiumPosition(pRank).y) < 20;
         const bx = Math.round(ag.x);
-        const by = Math.round(ag.y - 38);
-        const ny = Math.round(ag.y + 11);
+        const by = onPodium
+          ? Math.round(ag.y - (pRank === 1 ? 52 : pRank === 2 ? 36 : 22))
+          : Math.round(ag.y - 38);
+        const ny = onPodium
+          ? Math.round(ag.y + (pRank === 1 ? 38 : pRank === 2 ? 50 : 62))
+          : Math.round(ag.y + 11);
         const floorBadge = ag.isBoss ? 'BOSS' : `${ag.floor}F • ${ag.modelName}`;
+        const plateText = onPodium ? `#${pRank} ${ag.alias}` : `${ag.alias} <span class="${isDL ? 'text-cyan-300' : 'text-amber-300'} font-semibold">(${floorBadge})</span>`;
 
         overlayHtml += `
           <div class="absolute transform -translate-x-1/2 -translate-y-full flex flex-col items-center" style="left:${bx}px; top:${by}px;">
@@ -1860,7 +1883,7 @@
             </div>
           </div>
           <div class="absolute transform -translate-x-1/2" style="left:${bx}px; top:${ny}px;">
-            <div class="pixel-nameplate">${ag.alias} <span class="${isDL ? 'text-cyan-300' : 'text-amber-300'} font-semibold">(${floorBadge})</span></div>
+            <div class="pixel-nameplate">${plateText}</div>
           </div>
         `;
       });
@@ -1940,7 +1963,7 @@
      * 12. LIVE PREDICTION SANDBOX (HOOKED TO /features, /predict, /predict-image, /predict-text)
      ********************************************************************/
     window.openPredictionSandboxModal = async function() {
-      const winner = getWinnerAgent() || AGENT_ROSTER[2];
+      const winner = getWinnerAgent();
       sfx.click();
       const modal = document.getElementById('sandbox-modal');
       const sub = document.getElementById('sandbox-winner-subtitle');
@@ -1950,7 +1973,9 @@
       const randBtn = document.getElementById('btn-sandbox-randomize');
       document.getElementById('sandbox-result-banner').classList.add('hidden');
 
-      sub.textContent = `Winner: ${winner.alias} (${winner.modelName} • ${winner.floor}F) • Mode: ${currentDataset.problem_type}`;
+      sub.textContent = winner
+        ? `Winner: ${winner.alias} (${winner.modelName} • ${winner.floor}F) • Mode: ${currentDataset.problem_type}`
+        : 'No winner yet - train a dataset first';
 
       grid.classList.add('hidden');
       txtWrap.classList.add('hidden');
@@ -2054,7 +2079,6 @@
     }
 
     window.runLiveRowPrediction = async function() {
-      const winner = getWinnerAgent() || AGENT_ROSTER[2];
       const boss = AGENT_ROSTER[0];
       sfx.dispatch();
 
@@ -2097,10 +2121,11 @@
             renderProbabilityBars(data.probabilities);
             document.getElementById('sandbox-result-banner').classList.remove('hidden');
 
-            spawnFlyingPacket(boss.x, boss.y, winner, 'PRED', () => {
+            const matchedAgent = AGENT_ROSTER.find(a => !a.isBoss && (a.modelName === data.model || a.classModel === data.model || a.regModel === data.model)) || getWinnerAgent() || boss;
+            spawnFlyingPacket(boss.x, boss.y, matchedAgent, 'PRED', () => {
               sfx.finishModel();
-              winner.bubble = `🔮 Pred: ${data.prediction}`;
-              showOfficeToast(`${winner.alias} predicted: ${data.prediction}`, '🔮');
+              matchedAgent.bubble = `🔮 Pred: ${data.prediction}`;
+              showOfficeToast(`${matchedAgent.alias} predicted: ${data.prediction}`, '🔮');
             });
             return;
           } else if (res) {
@@ -2325,7 +2350,11 @@
     }
 
     function updateSelectedAgentFooter() {
-      if (!selectedAgent) return;
+      if (!selectedAgent) {
+        document.getElementById('footer-selected-model').textContent = 'None';
+        document.getElementById('footer-selected-params').textContent = '—';
+        return;
+      }
       document.getElementById('footer-selected-model').textContent = `${selectedAgent.alias} (${selectedAgent.displayRole})`;
       if (selectedAgent.status === 'failed') {
         document.getElementById('footer-selected-params').textContent = `FAILED: ${selectedAgent.error || 'Error'}`;
@@ -2384,19 +2413,30 @@
     }
 
     function resetAllAgentsForNewRun() {
-      AGENT_ROSTER.forEach((ag, idx) => {
+      const activeSet = new Set(getActiveAgentsForProblem().map(a => a.id));
+      let loungeIdx = 0;
+      AGENT_ROSTER.forEach((ag) => {
         if (!ag.isBoss) {
-          ag.status = 'queued';
           ag.score = null;
           ag.metrics = null;
           ag.seconds = null;
           ag.best_params = null;
           ag.error = null;
-          ag.current_task = 'Waiting in Lounge';
-          ag.bubble = '☕ queued in lounge';
-          const lp = getCommonLoungePosition(idx);
-          ag.targetX = lp.x;
-          ag.targetY = lp.y;
+          if (activeSet.has(ag.id)) {
+            ag.status = 'queued';
+            ag.current_task = 'Waiting in Lounge';
+            ag.bubble = '☕ queued in lounge';
+            const lp = getCommonLoungePosition(loungeIdx++);
+            ag.targetX = lp.x;
+            ag.targetY = lp.y;
+          } else {
+            ag.status = 'idle';
+            ag.current_task = `Ready on ${ag.floor}F`;
+            ag.bubble = 'idle at desk';
+            const dp = getDeskPosition(ag.deskIdx, ag.floor);
+            ag.targetX = dp.x;
+            ag.targetY = dp.y;
+          }
         }
       });
       bossLogs = [];
@@ -2404,7 +2444,7 @@
       if (logBox) logBox.innerHTML = '';
     }
 
-    async function refreshDatasetInsightsOnly(targetCol) {
+    async function refreshDatasetInsightsOnly(targetCol, keepTrainingState = false) {
       if (!currentDataset.filename) return;
       if (targetCol) currentDataset.target = targetCol;
 
@@ -2429,13 +2469,18 @@
         } catch (_) {}
       }
 
-      document.getElementById('hud-status-dot').className = 'w-2 h-2 rounded-full bg-amber-400';
+      if (!keepTrainingState) {
+        document.getElementById('hud-status-dot').className = 'w-2 h-2 rounded-full bg-amber-400';
+      }
       document.getElementById('hud-dataset-name').textContent = currentDataset.filename;
       document.getElementById('hud-target-col').textContent = currentDataset.target || 'folder classes';
       document.getElementById('hud-rows-count').textContent = (currentDataset.rows || 0).toLocaleString();
 
-      resetAllAgentsToIdleForSelection();
+      if (!keepTrainingState) {
+        resetAllAgentsToIdleForSelection();
+      }
       syncModelNamesWithProblemType();
+      ensureValidSelectedAgent();
       renderBottomCharacterDock();
       renderSidebarAgentsList();
       renderLeaderboardTab();
@@ -2514,7 +2559,12 @@
           currentDataset.problem_type = runData.problem_type;
           syncModelNamesWithProblemType();
         }
-        showOfficeToast(`Dispatched ${packetTag} packets to ${runData.jobs ? runData.jobs.length : ''} agents!`, '🚀');
+        if (taskModality === 'tabular') {
+          addBossLog('ANN, CNN and RNN are training on 2F - click the lift to watch them.');
+          showOfficeToast('ANN, CNN and RNN are training on 2F - click the lift to watch them.', '🛗');
+        } else {
+          showOfficeToast(`Dispatched ${packetTag} packets to ${runData.jobs ? runData.jobs.length : ''} agents!`, '🚀');
+        }
         startFastApiPolling(currentDataset.dataset_id, runData.jobs ? runData.jobs.length : 8);
       } catch (err) {
         isTrainingRun = false;
@@ -2615,7 +2665,7 @@
               isTrainingRun = false;
               document.getElementById('hud-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
 
-              if (taskModality === 'text') refreshDatasetInsightsOnly(currentDataset.target);
+              if (taskModality === 'text') refreshDatasetInsightsOnly(currentDataset.target, true);
 
               const winner = getWinnerAgent();
               if (winner) {
@@ -2864,11 +2914,20 @@ pipe = joblib.load("dataset_${dsId}_${winner.modelName}.joblib")
     function populateColumnDropdowns(columns, defaultTarget) {
       const tgtSel = document.getElementById('target-column-select');
       const txtSel = document.getElementById('text-column-select');
+      const targetVal = defaultTarget || columns[columns.length - 1] || '';
       if (tgtSel) {
-        tgtSel.innerHTML = columns.map(c => `<option value="${c}" ${c === defaultTarget ? 'selected' : ''}>${c}</option>`).join('');
+        tgtSel.innerHTML = columns.map(c => `<option value="${c}" ${c === targetVal ? 'selected' : ''}>${c}</option>`).join('');
       }
       if (txtSel) {
-        const defaultTxt = columns[0] !== defaultTarget ? columns[0] : (columns[1] || columns[0]);
+        const textKeywords = ['text', 'review', 'comment', 'message', 'content', 'sentence', 'body', 'description', 'title', 'tweet'];
+        const nonTargetCols = columns.filter(c => c !== targetVal);
+        let defaultTxt = nonTargetCols.find(c => textKeywords.some(kw => c.toLowerCase().includes(kw)));
+        if (!defaultTxt) {
+          defaultTxt = nonTargetCols.find(c => !/^(id|index|unnamed.*|.*_id)$/i.test(c.trim()));
+        }
+        if (!defaultTxt) {
+          defaultTxt = nonTargetCols[0] || columns[0] || '';
+        }
         txtSel.innerHTML = columns.map(c => `<option value="${c}" ${c === defaultTxt ? 'selected' : ''}>${c}</option>`).join('');
       }
     }
