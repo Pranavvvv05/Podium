@@ -103,10 +103,6 @@ This creates `test_data/digits_images.zip` (handwritten digits) and `test_data/n
 <img width="590" height="802" alt="bosslogs" src="https://github.com/user-attachments/assets/822a4e2b-b2bf-46e6-99d0-f15d76af15c7" />
 
 
-**Prediction Sandbox**
-
-![Sandbox](docs/sandbox.png)
-
 ## API overview
 
 | Endpoint | Purpose |
