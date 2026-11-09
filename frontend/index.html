@@ -883,6 +883,7 @@
       if (!canvas || !ctx) return;
       const parent = canvas.parentElement;
       if (!parent) return;
+      if (cw && parent.clientWidth === 0) return;
       cw = parent.clientWidth || 860;
       ch = parent.clientHeight || 540;
       const dpr = Math.max(2, window.devicePixelRatio || 2);
@@ -955,6 +956,12 @@
           const dp = getDeskPosition(ag.deskIdx, ag.floor);
           ag.x = dp.x; ag.y = dp.y;
           ag.targetX = dp.x; ag.targetY = dp.y;
+        }
+      });
+      positionDoneModelsOnPodium();
+      AGENT_ROSTER.forEach((ag) => {
+        if (!ag.isBoss && ag.status === 'done') {
+          ag.x = ag.targetX; ag.y = ag.targetY;
         }
       });
     }
