@@ -1777,19 +1777,9 @@
      ********************************************************************/
     function getAgentsVisibleOnCurrentFloor() {
       const activeIds = new Set(getActiveAgentsForProblem().map(a => a.id));
-      // Top 3 podium winners also visit current floor's Podium Ramp so you can celebrate them on either floor!
-      const top3Ids = new Set(
-        getActiveAgentsForProblem()
-          .filter(a => !a.isBoss && a.status === 'done' && typeof a.score === 'number')
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 3)
-          .map(a => a.id)
-      );
-
       return AGENT_ROSTER.filter(ag => {
         if (ag.isBoss) return true;
         if (ag.floor === currentFloor && activeIds.has(ag.id)) return true;
-        if (top3Ids.has(ag.id)) return true;
         return false;
       });
     }
