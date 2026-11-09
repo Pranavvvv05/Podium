@@ -1,3 +1,4 @@
+import os
 import re
 from collections import Counter
 import numpy as np
@@ -73,7 +74,7 @@ class _TorchBase(BaseEstimator):
         self.patience = patience
 
     def _train(self, X, y, n_out, loss_fn):
-        torch.set_num_threads(1)
+        torch.set_num_threads(self._threads())
         torch.manual_seed(42)
         X = X if torch.is_tensor(X) else torch.tensor(np.asarray(X, dtype=np.float32))
         y = torch.tensor(y)
@@ -107,6 +108,9 @@ class _TorchBase(BaseEstimator):
             net.load_state_dict(best_state)
         net.eval()
         self.net_ = net
+
+    def _threads(self):
+        return 1
 
     def _build_net(self, X, n_out):
         return _ARCHS[self.arch](X.shape[1], n_out)
@@ -148,6 +152,9 @@ class TorchImageClassifier(TorchClassifier):
 
     def __init__(self, arch="cnn2d", lr=0.003, epochs=15, batch_size=32, patience=4):
         super().__init__(arch=arch, lr=lr, epochs=epochs, batch_size=batch_size, patience=patience)
+
+    def _threads(self):
+        return max(1, (os.cpu_count() or 2) // 2)
 
     @staticmethod
     def _prep(X):

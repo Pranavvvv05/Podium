@@ -63,7 +63,7 @@ def get_text_models() -> dict:
         ),
     }
     if HAS_TORCH:
-        grid = {"model__lr": [0.003, 0.01]}
+        grid = {"model__lr": [0.005]}
         models["RNN"] = (Pipeline([("model", TorchTextClassifier(arch="gru"))]), grid)
         models["TextCNN"] = (Pipeline([("model", TorchTextClassifier(arch="textcnn"))]), grid)
     return models

@@ -17,7 +17,7 @@ try:
 except ImportError:
     HAS_TORCH = False
 
-IMG_SIZE = 64
+IMG_SIZE = 32
 IMG_EXT = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
 MAX_IMAGES = 6000
 MIN_PER_CLASS = 10
@@ -98,7 +98,7 @@ def get_image_models() -> dict:
     if HAS_TORCH:
         models["CNN"] = (
             Pipeline([("model", TorchImageClassifier())]),
-            {"model__lr": [0.001, 0.003]},
+            {"model__lr": [0.003]},
         )
     return models
 
@@ -129,4 +129,3 @@ def image_worker(queue, name: str, data: dict):
         queue.put(("ok", result))
     except Exception as e:
         queue.put(("error", str(e)))
-        

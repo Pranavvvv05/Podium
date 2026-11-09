@@ -18,7 +18,7 @@ import joblib
 from pydantic import BaseModel
 from ml.predict import feature_schema, run_prediction
 from ml.vision import (extract_zip, scan_folder, prepare_image_data,
-                       get_image_models, image_worker, load_image)
+                       get_image_models, image_worker, load_image, IMG_SIZE)
 from ml.nlp import (write_text_csv, prepare_text_data, get_text_models, text_worker)
 import pickle
 import shutil
@@ -104,6 +104,12 @@ def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
 MAX_WORKERS = 8
 MODEL_TIME_LIMIT = 300  # seconds: isse zyada lage to model band
+DEEP_TIME_LIMIT = 900  # ANN/CNN/RNN/TextCNN CPU par zyada time lete hain
+DEEP_MODELS = {"ANN", "CNN", "RNN", "TextCNN"}
+
+
+def time_limit_for(model_name: str) -> int:
+    return DEEP_TIME_LIMIT if model_name in DEEP_MODELS else MODEL_TIME_LIMIT
 MODEL_DIR = "models_saved"
 os.makedirs(MODEL_DIR, exist_ok=True)
 
@@ -186,9 +192,10 @@ def run_jobs(dataset_id: int):
                 return item["queue"].get_nowait()
             except queue_lib.Empty:
                 pass
-            if time.time() - item["t0"] > MODEL_TIME_LIMIT:
+            limit = time_limit_for(item["job"].model_name)
+            if time.time() - item["t0"] > limit:
                 item["proc"].terminate()
-                return ("error", f"Time limit of {MODEL_TIME_LIMIT}s reached")
+                return ("error", f"Time limit of {limit}s reached")
             if not item["proc"].is_alive():
                 try:
                     return item["queue"].get(timeout=2)
@@ -324,7 +331,7 @@ def upload_images(file: UploadFile = File(...), db: Session = Depends(get_db)):
     total = sum(len(v) for v in classes.values())
     dataset = models.Dataset(filename=file.filename, file_path=folder, n_rows=total,
                              target_column="folder name", problem_type=IMAGE_TYPE,
-                             n_features=64 * 64 * 3)
+                             n_features=IMG_SIZE * IMG_SIZE * 3)
     db.add(dataset)
     db.commit()
     db.refresh(dataset)
@@ -400,18 +407,23 @@ def run_text_dataset(dataset_id: int, text_column: str, label_column: str,
     }
 
 
+def latest_run_jobs(db: Session, dataset) -> list:
+    """Sirf sabse naye run ki jobs (purane runs ki jobs nahi)."""
+    query = db.query(models.Job).filter_by(dataset_id=dataset.id)
+    if not dataset.problem_type:
+        return query.order_by(models.Job.id).all()
+    n = len(models_for(dataset.problem_type))
+    recent = query.order_by(models.Job.id.desc()).limit(n).all()
+    return sorted(recent, key=lambda j: j.id)
+
+
 @app.get("/jobs/{dataset_id}")
 def get_jobs(dataset_id: int, db: Session = Depends(get_db)):
     dataset = db.get(models.Dataset, dataset_id)
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
-    jobs = (
-        db.query(models.Job)
-        .filter_by(dataset_id=dataset_id)
-        .order_by(models.Job.id)
-        .all()
-    )
+    jobs = latest_run_jobs(db, dataset)
     return [
         {
             "job_id": j.id,
@@ -433,11 +445,10 @@ def get_leaderboard(dataset_id: int, db: Session = Depends(get_db)):
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
-    done_jobs = (
-        db.query(models.Job)
-        .filter_by(dataset_id=dataset_id, status="done")
-        .order_by(models.Job.score.desc())
-        .all()
+    done_jobs = sorted(
+        [j for j in latest_run_jobs(db, dataset) if j.status == "done"],
+        key=lambda j: j.score,
+        reverse=True,
     )
     return [
         {
