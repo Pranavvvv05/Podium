@@ -56,7 +56,7 @@ The PyTorch models are wrapped as scikit-learn estimators, so they work inside `
    cd backend
    uvicorn main:app --reload
    ```
-4. Open http://127.0.0.1:8000/app/
+4. Open https://podium-1-5gku.onrender.com
 
 ## Try it with sample data
 
