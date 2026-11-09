@@ -4,9 +4,9 @@ from pathlib import Path
 from ml.train import (prepare_data, get_models, worker,
                       drop_noise_columns, detect_problem_type)
 import pandas as pd
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, UploadFile, Request
 from sqlalchemy.orm import Session
 
 from database import SessionLocal, engine, Base
@@ -52,7 +52,9 @@ def get_db():
 
 
 @app.get("/")
-def root():
+def root(request: Request):
+    if "text/html" in request.headers.get("accept", ""):
+        return RedirectResponse("/app/")
     return {"status": "Podium backend is alive"}
 
 
