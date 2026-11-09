@@ -85,20 +85,23 @@ This creates `test_data/digits_images.zip` (handwritten digits) and `test_data/n
 ## Screenshots
 
 **Floor 1: Classical ML Bullpen**
+<img width="1917" height="1078" alt="floor1" src="https://github.com/user-attachments/assets/105c34b2-af36-4683-9876-2204f4b7e631" />
 
-![Floor 1](docs/floor1.png)
 
 **Floor 2: Deep Learning Lab**
 
-![Floor 2](docs/floor2.png)
+<img width="1917" height="1077" alt="floor2" src="https://github.com/user-attachments/assets/ec0f116b-eb25-497b-9509-1db6c9badbbe" />
+
 
 **Live leaderboard and podium**
 
-![Leaderboard](docs/leaderboard.png)
+<img width="575" height="792" alt="leaderboard" src="https://github.com/user-attachments/assets/62cf52b5-2175-4441-9404-eec742d4d0ed" />
+
 
 **Boss logs (live training events)**
 
-![Boss logs](docs/bosslogs.png)
+<img width="590" height="802" alt="bosslogs" src="https://github.com/user-attachments/assets/822a4e2b-b2bf-46e6-99d0-f15d76af15c7" />
+
 
 **Prediction Sandbox**
 
